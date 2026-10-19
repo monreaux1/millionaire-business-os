@@ -1,0 +1,194 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@700;800;900&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Light theme — inspired by Dribbble "AI Sales Landing Page" */
+    --background: 0 0% 98%;
+    --foreground: 0 0% 9%;
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 9%;
+    --primary: 18 100% 50%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 0 0% 96%;
+    --secondary-foreground: 0 0% 9%;
+    --muted: 0 0% 95%;
+    --muted-foreground: 0 0% 45%;
+    --accent: 18 100% 50%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 0 0% 90%;
+    --input: 0 0% 92%;
+    --ring: 18 100% 50%;
+    --radius: 1rem;
+    --chart-1: 18 100% 50%;
+    --chart-2: 340 75% 55%;
+    --chart-3: 197 37% 45%;
+    --chart-4: 280 65% 60%;
+    --chart-5: 43 74% 56%;
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 0 0% 30%;
+    --sidebar-primary: 18 100% 50%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 0 0% 96%;
+    --sidebar-accent-foreground: 0 0% 9%;
+    --sidebar-border: 0 0% 92%;
+    --sidebar-ring: 18 100% 50%;
+  }
+}
+
+@layer base {
+  /* Manual dark mode */
+  .dark {
+    --background: 0 0% 7%;
+    --foreground: 0 0% 95%;
+    --card: 0 0% 10%;
+    --card-foreground: 0 0% 95%;
+    --popover: 0 0% 10%;
+    --popover-foreground: 0 0% 95%;
+    --primary: 18 100% 50%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 0 0% 15%;
+    --secondary-foreground: 0 0% 95%;
+    --muted: 0 0% 15%;
+    --muted-foreground: 0 0% 65%;
+    --accent: 18 100% 50%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 72% 55%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 0 0% 20%;
+    --input: 0 0% 22%;
+    --ring: 18 100% 50%;
+    --sidebar-background: 0 0% 9%;
+    --sidebar-foreground: 0 0% 65%;
+    --sidebar-primary: 18 100% 50%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 0 0% 15%;
+    --sidebar-accent-foreground: 0 0% 95%;
+    --sidebar-border: 0 0% 20%;
+    --sidebar-ring: 18 100% 50%;
+  }
+
+  /* Auto dark mode when the OS prefers dark and no manual "light" override is set */
+  @media (prefers-color-scheme: dark) {
+    :root:not(.light) {
+      --background: 0 0% 7%;
+      --foreground: 0 0% 95%;
+      --card: 0 0% 10%;
+      --card-foreground: 0 0% 95%;
+      --popover: 0 0% 10%;
+      --popover-foreground: 0 0% 95%;
+      --primary: 18 100% 50%;
+      --primary-foreground: 0 0% 100%;
+      --secondary: 0 0% 15%;
+      --secondary-foreground: 0 0% 95%;
+      --muted: 0 0% 15%;
+      --muted-foreground: 0 0% 65%;
+      --accent: 18 100% 50%;
+      --accent-foreground: 0 0% 100%;
+      --destructive: 0 72% 55%;
+      --destructive-foreground: 0 0% 100%;
+      --border: 0 0% 20%;
+      --input: 0 0% 22%;
+      --ring: 18 100% 50%;
+      --sidebar-background: 0 0% 9%;
+      --sidebar-foreground: 0 0% 65%;
+      --sidebar-primary: 18 100% 50%;
+      --sidebar-primary-foreground: 0 0% 100%;
+      --sidebar-accent: 0 0% 15%;
+      --sidebar-accent-foreground: 0 0% 95%;
+      --sidebar-border: 0 0% 20%;
+      --sidebar-ring: 18 100% 50%;
+    }
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground font-inter;
+    background: hsl(var(--background));
+    min-height: 100vh;
+    overscroll-behavior-y: none;
+    -webkit-overflow-scrolling: touch;
+  }
+  button, a, [role="button"] {
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+}
+
+@layer utilities {
+  .font-display {
+    font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;
+  }
+  .font-inter {
+    font-family: 'Inter', sans-serif;
+  }
+  /* Orange/coral gradient accent from the Dribbble design */
+  .accent-gradient {
+    background: linear-gradient(135deg, #ff6a3d 0%, #ff5722 50%, #f54d34 100%);
+  }
+  .accent-text {
+    background: linear-gradient(135deg, #ff6a3d, #f54d34);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .light-card {
+    background: #ffffff;
+    border: 1px solid rgba(0, 0, 0, 0.06);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 8px 24px rgba(0,0,0,0.04);
+  }
+  .glass-card {
+    background: rgba(255,255,255,0.7);
+    border: 1px solid rgba(255,255,255,0.6);
+    backdrop-filter: blur(16px);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.06);
+  }
+  .accent-border {
+    border: 1px solid rgba(255, 106, 61, 0.25);
+  }
+  .accent-glow {
+    box-shadow: 0 0 30px rgba(255, 87, 34, 0.18);
+  }
+  .soft-shadow {
+    box-shadow: 0 10px 40px rgba(0,0,0,0.06);
+  }
+  .hero-radial {
+    background: radial-gradient(ellipse at top right, rgba(255,106,61,0.12) 0%, transparent 50%), radial-gradient(ellipse at bottom left, rgba(245,77,52,0.08) 0%, transparent 45%);
+  }
+
+  /* Dark mode overrides for hardcoded-light custom utilities */
+  .dark .light-card, html.dark .light-card {
+    background: hsl(var(--card));
+    border: 1px solid hsl(var(--border));
+    box-shadow: 0 1px 3px rgba(0,0,0,0.3), 0 8px 24px rgba(0,0,0,0.35);
+  }
+  .dark .glass-card, html.dark .glass-card {
+    background: rgba(16,16,18,0.72);
+    border: 1px solid rgba(255,255,255,0.08);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not(.light) .light-card {
+      background: hsl(var(--card));
+      border: 1px solid hsl(var(--border));
+      box-shadow: 0 1px 3px rgba(0,0,0,0.3), 0 8px 24px rgba(0,0,0,0.35);
+    }
+    :root:not(.light) .glass-card {
+      background: rgba(16,16,18,0.72);
+      border: 1px solid rgba(255,255,255,0.08);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+    }
+  }
+}

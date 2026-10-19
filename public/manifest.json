@@ -1,0 +1,11 @@
+{
+  "name": "Millionaire Business OS",
+  "short_name": "MB OS",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#111111",
+  "icons": [
+    { "src": "https://media.base44.com/images/public/68b3ceea8626205b99d31641/5489f7c4c_mbsymbol.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}
