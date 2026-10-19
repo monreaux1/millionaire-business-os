@@ -5,8 +5,11 @@
 import { createClient } from "@supabase/supabase-js";
 import { createEntityStore, EntityError } from "@/api/entity-store";
 
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
-const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
+// Accepts the project URL with or without a pasted API path (e.g. ".../rest/v1/").
+const cleanSupabaseUrl = (value) =>
+  String(value || "").trim().replace(/\/(rest|auth|storage)\/v1\/?.*$/, "").replace(/\/+$/, "");
+const SUPABASE_URL = cleanSupabaseUrl(import.meta.env.VITE_SUPABASE_URL);
+const SUPABASE_ANON_KEY = String(import.meta.env.VITE_SUPABASE_ANON_KEY || "").trim();
 
 if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
   console.error("Missing VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY environment variables.");
