@@ -23,10 +23,15 @@ export async function callClaude({ prompt, schema, system, maxTokens } = {}) {
     max_tokens: maxTokens || (inputSchema ? 16000 : 4000),
     messages: [{ role: "user", content: prompt }],
   };
-  if (system) body.system = String(system).slice(0, 8000);
+  const structuredRule = "Always answer by calling the `respond` tool exactly once with the complete answer. Do not reply with plain text.";
   if (inputSchema) {
+    // Newer models don't allow forcing a specific tool, so we let Claude choose
+    // ("auto"), instruct it to use the tool, and fall back to parsing JSON text.
     body.tools = [{ name: "respond", description: "Return the complete answer in this exact structure.", input_schema: inputSchema }];
-    body.tool_choice = { type: "tool", name: "respond" };
+    body.tool_choice = { type: "auto" };
+    body.system = [system ? String(system).slice(0, 8000) : "", structuredRule].filter(Boolean).join("\n\n");
+  } else if (system) {
+    body.system = String(system).slice(0, 8000);
   }
 
   const res = await fetch(API_URL, {
@@ -57,9 +62,30 @@ export async function callClaude({ prompt, schema, system, maxTokens } = {}) {
   }
 
   if (inputSchema) {
-    const toolUse = (data.content || []).find((block) => block.type === "tool_use");
-    if (!toolUse?.input) throw new HttpError(502, "The AI returned an incomplete answer. Please try again.");
-    return schema.type === "object" ? toolUse.input : toolUse.input.result;
+    const structured = extractStructured(data);
+    if (!structured) throw new HttpError(502, "The AI returned an incomplete answer. Please try again.");
+    return schema.type === "object" ? structured : structured.result;
   }
   return (data.content || []).filter((block) => block.type === "text").map((block) => block.text).join("\n").trim();
+}
+
+// Tool call input, or JSON found in a text reply (with or without ``` fences).
+export function extractStructured(data) {
+  const blocks = data?.content || [];
+  const toolUse = blocks.find((block) => block.type === "tool_use" && block.input && typeof block.input === "object");
+  if (toolUse) return toolUse.input;
+  const text = blocks.filter((b) => b.type === "text").map((b) => b.text).join("\n");
+  const candidates = [];
+  const fenced = text.match(/```(?:json)?\s*([\s\S]*?)```/i);
+  if (fenced) candidates.push(fenced[1]);
+  const first = text.indexOf("{");
+  const last = text.lastIndexOf("}");
+  if (first !== -1 && last > first) candidates.push(text.slice(first, last + 1));
+  for (const candidate of candidates) {
+    try {
+      const parsed = JSON.parse(candidate);
+      if (parsed && typeof parsed === "object") return parsed;
+    } catch { /* try next */ }
+  }
+  return null;
 }

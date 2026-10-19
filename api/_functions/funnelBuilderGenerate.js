@@ -1,33 +1,14 @@
 import { createClientFromRequest } from "../_lib/base44-compat.js";
+import { callClaude } from "../_lib/claude.js";
 const DEFAULT_ANTHROPIC_MODEL = "claude-sonnet-5-5";
 const BASE44_MODEL = "claude_sonnet_4_6";
 async function generateWithAnthropic(apiKey, prompt, schema) {
-  const res = await fetch("https://api.anthropic.com/v1/messages", {
-    method: "POST",
-    headers: {
-      "x-api-key": apiKey,
-      "anthropic-version": "2023-06-01",
-      "content-type": "application/json",
-      ...process.env.ANTHROPIC_WORKSPACE_ID ? { "anthropic-workspace-id": process.env.ANTHROPIC_WORKSPACE_ID.trim() } : {}
-    },
-    body: JSON.stringify({
-      model: process.env.ANTHROPIC_MODEL || DEFAULT_ANTHROPIC_MODEL,
-      max_tokens: 16e3,
-      system: "You are a world-class direct-response funnel designer. Always answer by calling the save_funnel tool with the complete funnel.",
-      tools: [{ name: "save_funnel", description: "Save the complete generated funnel.", input_schema: schema }],
-      tool_choice: { type: "tool", name: "save_funnel" },
-      messages: [{ role: "user", content: prompt }]
-    })
+  return callClaude({
+    prompt,
+    schema,
+    maxTokens: 16000,
+    system: "You are a world-class direct-response funnel designer. Return the complete funnel.",
   });
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok) {
-    const err = new Error(data?.error?.message || `Anthropic API error ${res.status}`);
-    err.status = res.status;
-    throw err;
-  }
-  const toolUse = (data.content || []).find((block) => block.type === "tool_use");
-  if (!toolUse?.input) throw new Error("Claude did not return a funnel.");
-  return toolUse.input;
 }
 async function generateFunnelJson(base44, prompt, schema) {
   const anthropicKey = process.env.ANTHROPIC_API_KEY;
