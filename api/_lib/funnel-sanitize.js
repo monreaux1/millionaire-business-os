@@ -13,7 +13,12 @@ const DESIGN_HINT =
   /#[0-9a-f]{6}\b|#[0-9a-f]{3}\b|\b(?:connect|insert|add|paste)\s+(?:the\s+|your\s+)?(?:url|link)\b|after generation|\bplaceholder\b|\bmobile[- ]first\b|\bfont[- ]weight\b|\bpx\b|\bsans[- ]serif\b|\bhex\b|\{\{|\}\}/i;
 const PAREN_NOTE = /\s*[([][^()[\]]*?(?:#[0-9a-f]{3,6}\b|url|link|after generation|placeholder|layout|icon|font|colou?r|designer)[^()[\]]*?[)\]]/gi;
 
-const isDesignNote = (text) => DESIGN_LABEL.test(text) || DESIGN_HINT.test(text);
+// "It's presented as a quiet card below the buttons, with this line: '…'"
+// → keep only the quoted copy.
+const LEAD_IN = /(?:^|(?<=[.!?]\s))[^.!?]*\b(?:presented|shown|displayed|placed|styled|rendered)\s+(?:as|in|below|above|under|beside|next to|inside)\b[^.!?:]*:\s*/gi;
+const PLACEMENT_HINT = /\b(?:presented|shown|displayed|placed|styled|rendered)\s+(?:as\s+a|below|above|under|beside|next to|inside)\b|\bnot a pop-?up\b/i;
+
+const isDesignNote = (text) => DESIGN_LABEL.test(text) || DESIGN_HINT.test(text) || PLACEMENT_HINT.test(text);
 
 // Returns { clean, notes } for one string.
 function cleanString(value) {
@@ -24,7 +29,19 @@ function cleanString(value) {
     // A line that starts with a design label ("Layout:", "Icon:") is all notes.
     if (DESIGN_LABEL.test(rawLine)) { notes.push(rawLine.trim()); continue; }
     // Otherwise drop design sentences, then strip design asides "(…)".
-    const kept = rawLine.split(/(?<=[.!?])\s+/).filter((sentence) => {
+    let hadLeadIn = false;
+    let unwrapped = rawLine.replace(LEAD_IN, (match) => {
+      notes.push(match.trim());
+      hadLeadIn = true;
+      return "\u0000";
+    });
+    if (hadLeadIn) {
+      // Drop the quote marks that wrapped the copy after the lead-in.
+      const quoted = /\u0000['"‘“]/.test(unwrapped);
+      unwrapped = unwrapped.replace(/\u0000['"‘“]?/g, "");
+      if (quoted) unwrapped = unwrapped.replace(/['"’”](\s*)$/, "$1");
+    }
+    const kept = unwrapped.split(/(?<=[.!?])\s+/).filter((sentence) => {
       const withoutAsides = sentence.replace(PAREN_NOTE, "");
       if (isDesignNote(withoutAsides) || (withoutAsides !== sentence && /#[0-9a-f]{3,6}\b/i.test(sentence) && /\b(background|colou?r|icon|font|layout|use a)\b/i.test(withoutAsides))) {
         notes.push(sentence.trim());
