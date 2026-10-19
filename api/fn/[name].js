@@ -1,6 +1,7 @@
 // Runs the app's server functions: POST /api/fn/<name>
 // (the browser calls these through base44.functions.invoke(name, payload)).
-import { readBody, sendJson } from "../_lib/server.js";
+import { readBody, sendJson, requireUser } from "../_lib/server.js";
+import { billingEnabled, requireActiveSubscription } from "../_lib/billing.js";
 import { toWebRequest } from "../_lib/base44-compat.js";
 import dailyBriefing from "../_functions/dailyBriefing.js";
 import deleteAccount from "../_functions/deleteAccount.js";
@@ -13,6 +14,9 @@ import pricingAgent from "../_functions/pricingAgent.js";
 import publicFunnel from "../_functions/publicFunnel.js";
 
 export const config = { maxDuration: 300 };
+
+// Open to everyone (public funnel pages) or always allowed (account deletion).
+const NO_PLAN_NEEDED = new Set(["publicFunnel", "deleteAccount", "dailyBriefing"]);
 
 const FUNCTIONS = {
   dailyBriefing,
@@ -33,6 +37,10 @@ export default async function handler(req, res) {
   if (req.method !== "POST") return sendJson(res, 405, { error: "Method not allowed" });
 
   try {
+    if (billingEnabled() && !NO_PLAN_NEEDED.has(name)) {
+      const { user } = await requireUser(req);
+      await requireActiveSubscription(user);
+    }
     const response = await fn(toWebRequest(req, readBody(req)));
     const text = await response.text();
     res.status(response.status);

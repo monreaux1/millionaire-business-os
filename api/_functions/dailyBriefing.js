@@ -1,4 +1,5 @@
 import { createClientFromRequest } from "../_lib/base44-compat.js";
+import { accessFor } from "../_lib/billing.js";
 const json = (body, status = 200) => Response.json(body, { status });
 const todayKey = () => (/* @__PURE__ */ new Date()).toISOString().slice(0, 10);
 const dayNumberSince = (isoDate) => {
@@ -92,6 +93,10 @@ async function main(req) {
     const users = await base44.entities.User.list();
     for (const user of users) {
       if (!user?.email) continue;
+      if (!(await accessFor(user)).active) {
+        logs.push(`${user.email}: no active plan`);
+        continue;
+      }
       try {
         const found = await findTodaysPlan(base44, user);
         if (!found) {

@@ -1,4 +1,5 @@
-import { useEffect, useState, Suspense, lazy } from "react";
+import { useEffect, useState, useCallback, Suspense, lazy } from "react";
+import { getBillingStatus } from "@/lib/billing";
 import { Toaster } from "@/components/ui/toaster"
 import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClientInstance } from '@/lib/query-client'
@@ -47,6 +48,7 @@ const Leads = lazy(() => import('./pages/Leads'));
 const PublicFunnel = lazy(() => import('./pages/PublicFunnel'));
 const PaymentFulfillment = lazy(() => import('./pages/PaymentFulfillment'));
 const Login = lazy(() => import('./pages/Login'));
+const Billing = lazy(() => import('./pages/Billing'));
 
 const PageLoader = () => (
   <div className="fixed inset-0 flex items-center justify-center bg-background">
@@ -64,6 +66,22 @@ try {
 const AuthenticatedApp = () => {
   const { user, isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
   const [isProfileHydrated, setIsProfileHydrated] = useState(false);
+  // "checking" → "active" | "locked". Accounts without a paid plan see only the plan picker.
+  const [access, setAccess] = useState("checking");
+
+  useEffect(() => {
+    if (isLoadingAuth || authError || !user) return;
+    let cancelled = false;
+    getBillingStatus()
+      .then((status) => { if (!cancelled) setAccess(status.active ? "active" : "locked"); })
+      // If the status check itself fails, don't lock paying customers out;
+      // the server still refuses paid features without an active plan.
+      .catch(() => { if (!cancelled) setAccess("active"); });
+    return () => { cancelled = true; };
+  }, [user, isLoadingAuth, authError]);
+
+  // After checkout the app unlocks in place and shows the confirmed plan on /billing.
+  const handleActivated = useCallback(() => setAccess("active"), []);
 
   useEffect(() => {
     if (isLoadingAuth || isLoadingPublicSettings || authError || !user) return;
@@ -147,6 +165,15 @@ const AuthenticatedApp = () => {
     return null;
   }
 
+  if (access === "checking") return <PageLoader />;
+  if (access === "locked") {
+    return (
+      <Suspense fallback={<PageLoader />}>
+        <Billing locked onActivated={handleActivated} />
+      </Suspense>
+    );
+  }
+
   return (
     <Suspense fallback={<PageLoader />}>
     <Routes>
@@ -181,6 +208,7 @@ const AuthenticatedApp = () => {
       <Route path="/EmailBriefing" element={<EmailBriefing />} />
       <Route path="/Leads" element={<Leads />} />
       <Route path="/PaymentFulfillment" element={<PaymentFulfillment />} />
+      <Route path="/billing" element={<Billing />} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
     </Suspense>

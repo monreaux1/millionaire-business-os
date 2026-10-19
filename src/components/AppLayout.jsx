@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard, Lightbulb, Layers, Gift, Map, Rocket,
-  FileText, Mic2, Send, ChevronLeft, ChevronRight, Bot, Zap, Video, Brain, LogOut, TrendingUp, GitBranch, Settings, Calendar, Mail, CircleDollarSign, Users, CreditCard
+  FileText, Mic2, Send, ChevronLeft, ChevronRight, Bot, Zap, Video, Brain, LogOut, TrendingUp, GitBranch, Settings, Calendar, Mail, CircleDollarSign, Users, CreditCard, BadgeCheck
 } from "lucide-react";
 import BottomTabBar from "./BottomTabBar";
 import PageTransition from "./PageTransition";
@@ -35,6 +35,7 @@ const NAV = [
   { label: "Launch Sequence",    path: "/LaunchSequenceAgent",  icon: Rocket },
   { label: "Funnel Acquisition", path: "/FunnelAcquisitionAgent", icon: GitBranch },
   { label: "Business Strategist", path: "/HormoziBot",          icon: Bot },
+  { label: "My Plan & Billing",  path: "/billing",             icon: BadgeCheck },
 ];
 
 export default function AppLayout({ children }) {

@@ -26,6 +26,25 @@ supabase/migrations/ database tables + security rules (run once)
 6. Add your custom domain in Vercel → Domains.
 7. Sign up in the app, then put your email in `ADMIN_EMAILS` and redeploy.
 
+## Turn on paid plans (Stripe, about 15 minutes)
+
+Until `STRIPE_SECRET_KEY` is set, every signed-up account gets the full app. Once it's set, accounts without
+an active plan only see the plan picker, and the AI, agents and funnel generator refuse requests (HTTP 402).
+Admins (`ADMIN_EMAILS`) always have access. Public funnel pages keep working for everyone.
+
+1. Supabase → SQL Editor → run `supabase/migrations/002_billing.sql`.
+2. Stripe → Product catalog → create recurring prices: Founding $27/mo, Pro $47/mo, Pro Annual $470/yr,
+   Pro + Coaching $197/mo. Copy each price ID into the matching `STRIPE_PRICE_*` variable.
+3. Stripe → Developers → Webhooks → Add endpoint `https://YOUR-APP/api/billing/webhook` with events
+   `checkout.session.completed`, `customer.subscription.created`, `customer.subscription.updated`,
+   `customer.subscription.deleted`. Copy its signing secret into `STRIPE_WEBHOOK_SECRET`.
+4. Stripe → Settings → Billing → Customer portal → turn it on (lets members update cards, switch plans, cancel).
+5. Add `STRIPE_SECRET_KEY` and `APP_URL` in Vercel, then redeploy.
+6. Test in Stripe test mode first (test keys + card 4242 4242 4242 4242), then switch to live keys.
+
+Founding Member closes automatically after `FOUNDING_LIMIT` (default 50) active founding subscriptions.
+Plan names, prices and descriptions shown in the app are in `api/_lib/billing.js`.
+
 Invite-only access: Supabase → Authentication → Sign In / Providers → turn off "Allow new users to sign up",
 set `VITE_ALLOW_SIGNUP=false`, and invite buyers from Supabase → Authentication → Users → Invite.
 

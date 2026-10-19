@@ -2,9 +2,11 @@
 // (the Daily Briefing page), so this can't be abused to send spam.
 import { postHandler, requireUser, HttpError } from "./_lib/server.js";
 import { sendEmail } from "./_lib/email.js";
+import { requireActiveSubscription } from "./_lib/billing.js";
 
 export default postHandler(async (req, body) => {
   const { user } = await requireUser(req);
+  await requireActiveSubscription(user);
   if (body.to && String(body.to).toLowerCase() !== String(user.email).toLowerCase()) {
     throw new HttpError(403, "You can only send emails to your own address.");
   }

@@ -34,7 +34,7 @@ async function accessToken() {
 
 // POST to our own server API with the user's session; throws errors shaped like
 // Base44's ({ status, data: { error } }) so existing error handling keeps working.
-async function callApi(path, body) {
+export async function callApi(path, body) {
   const token = await accessToken();
   const res = await fetch(path, {
     method: "POST",

@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { X, LayoutDashboard, Lightbulb, Brain, Layers, Gift, Map, Video, Zap, Rocket, FileText, Mic2, Send, Bot, LogOut, CircleDollarSign, Palette, Settings, CreditCard, Users, Calendar, Mail, TrendingUp } from "lucide-react";
+import { X, LayoutDashboard, Lightbulb, Brain, Layers, Gift, Map, Video, Zap, Rocket, FileText, Mic2, Send, Bot, LogOut, CircleDollarSign, Palette, Settings, CreditCard, Users, Calendar, Mail, TrendingUp, BadgeCheck } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { base44 } from "@/api/base44Client";
 import DeleteAccountButton from "@/components/DeleteAccountButton";
@@ -30,6 +30,7 @@ const NAV = [
   { label: "Sales Scripts",     path: "/SalesScripts",        icon: Mic2 },
   { label: "Deployment Center", path: "/DeploymentCenter",    icon: Send },
   { label: "Business Strategist", path: "/HormoziBot",          icon: Bot },
+  { label: "My Plan & Billing",  path: "/billing",             icon: BadgeCheck },
 ];
 
 export default function MobileMenu({ onClose }) {

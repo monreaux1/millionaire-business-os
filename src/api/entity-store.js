@@ -13,6 +13,7 @@ export const ENTITY_TABLES = {
   CommerceSettings: "commerce_settings",
   FunnelLead: "funnel_lead",
   GhlConnection: "ghl_connection",
+  Subscription: "subscription",
 };
 
 const BUILTIN = ["id", "created_by", "created_by_id", "created_date", "updated_date"];
