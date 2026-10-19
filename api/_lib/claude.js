@@ -52,7 +52,8 @@ export async function callClaude({ prompt, schema, system, maxTokens } = {}) {
     if (/workspace/i.test(data?.error?.message || "")) {
       throw new HttpError(500, "The AI key isn't tied to an Anthropic workspace. Create the key inside a workspace (console.anthropic.com → Workspaces) or set ANTHROPIC_WORKSPACE_ID in Vercel.");
     }
-    throw new HttpError(502, "The AI could not finish this request. Please try again.");
+    const detail = String(data?.error?.message || `HTTP ${res.status}`).slice(0, 300);
+    throw new HttpError(502, `The AI could not finish this request. Please try again. (${detail})`);
   }
 
   if (inputSchema) {
