@@ -7,7 +7,8 @@ async function generateWithAnthropic(apiKey, prompt, schema) {
     headers: {
       "x-api-key": apiKey,
       "anthropic-version": "2023-06-01",
-      "content-type": "application/json"
+      "content-type": "application/json",
+      ...process.env.ANTHROPIC_WORKSPACE_ID ? { "anthropic-workspace-id": process.env.ANTHROPIC_WORKSPACE_ID.trim() } : {}
     },
     body: JSON.stringify({
       model: process.env.ANTHROPIC_MODEL || DEFAULT_ANTHROPIC_MODEL,

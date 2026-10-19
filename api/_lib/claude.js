@@ -35,6 +35,8 @@ export async function callClaude({ prompt, schema, system, maxTokens } = {}) {
       "x-api-key": apiKey,
       "anthropic-version": "2023-06-01",
       "content-type": "application/json",
+      // Needed only for organization-level keys that aren't tied to a workspace.
+      ...(process.env.ANTHROPIC_WORKSPACE_ID ? { "anthropic-workspace-id": process.env.ANTHROPIC_WORKSPACE_ID.trim() } : {}),
     },
     body: JSON.stringify(body),
   });
@@ -46,6 +48,9 @@ export async function callClaude({ prompt, schema, system, maxTokens } = {}) {
     if (res.status === 429 || res.status === 529) throw new HttpError(429, "The AI is busy right now. Please try again in a minute.");
     if (res.status === 400 && /credit|billing/i.test(data?.error?.message || "")) {
       throw new HttpError(402, "AI credits are used up. Add credits in the Anthropic console.");
+    }
+    if (/workspace/i.test(data?.error?.message || "")) {
+      throw new HttpError(500, "The AI key isn't tied to an Anthropic workspace. Create the key inside a workspace (console.anthropic.com → Workspaces) or set ANTHROPIC_WORKSPACE_ID in Vercel.");
     }
     throw new HttpError(502, "The AI could not finish this request. Please try again.");
   }
