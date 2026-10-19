@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { useParams, useSearchParams } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { ArrowRight, Check, Loader2, PartyPopper, ShieldCheck } from "lucide-react";
+import { readableOn } from "@/lib/color-contrast";
 
 const PAGE_ORDER = ["landing_page", "order_page", "upsell_page", "thank_you_page"];
 const getErrorMessage = (error) => error?.response?.data?.error || error?.message || "Something went wrong. Please try again.";
@@ -23,9 +24,11 @@ export default function PublicFunnel() {
   const page = funnel?.[pageKey];
   const connection = project?.page_connections?.[pageKey] || {};
   const brand = funnel?.brand_system || {};
-  const primary = brand.primary_color || "#ff5a1f";
-  const secondary = brand.secondary_color || "#111111";
   const background = brand.background_color || "#ffffff";
+  // Buttons use white text, so the primary color must read under white;
+  // headlines use the secondary color on the page background.
+  const primary = readableOn(brand.primary_color || "#ff5a1f", "#ffffff", 2.5);
+  const secondary = readableOn(brand.secondary_color || "#111111", background);
   const headingFont = brand.headline_font || "Plus Jakarta Sans";
   const bodyFont = brand.body_font || "Inter";
 

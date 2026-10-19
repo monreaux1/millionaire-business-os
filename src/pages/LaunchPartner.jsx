@@ -375,7 +375,7 @@ Be extremely specific and use the actual business idea and audience throughout. 
                 )}
               </Button>
               {isBuilding && (
-                <p className="text-center text-muted-foreground text-sm">This takes 20–30 seconds. We're building offers, funnels, content, sales scripts and your launch plan simultaneously.</p>
+                <p className="text-center text-muted-foreground text-sm">This takes about 1–2 minutes — keep this page open. We're building offers, funnels, content, sales scripts and your launch plan simultaneously.</p>
               )}
             </CardContent>
           </Card>

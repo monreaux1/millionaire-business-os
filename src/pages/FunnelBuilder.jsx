@@ -297,7 +297,7 @@ export default function FunnelBuilder() {
             <div>
               <Badge className="bg-primary/10 text-primary border-primary/20 mb-3">NATIVE FUNNEL STUDIO</Badge>
               <h1 className="font-display text-4xl md:text-5xl font-black">Create My Funnel</h1>
-              <p className="text-muted-foreground mt-3 max-w-2xl">Choose the goal, connect the offer, and let AI build branded pages that are hosted inside Base44.</p>
+              <p className="text-muted-foreground mt-3 max-w-2xl">Choose the goal, connect the offer, and let AI build branded pages hosted right here in the app.</p>
             </div>
             <div className="bg-[#111] text-white rounded-2xl p-4 min-w-[280px]">
               <p className="text-sm tracking-[0.18em] uppercase text-primary font-black">Intelligence loaded</p>

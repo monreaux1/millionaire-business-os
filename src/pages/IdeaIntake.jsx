@@ -337,7 +337,7 @@ Use the actual business idea and audience throughout. Make it extremely specific
                 <><Zap className="w-5 h-5 mr-3" />Build My Business Launch<ArrowRight className="w-5 h-5 ml-3" /></>
               )}
             </Button>
-            {isBuilding && <p className="text-center text-muted-foreground text-sm">This takes 20–30 seconds. Generating offers, funnel, content & sales scripts...</p>}
+            {isBuilding && <p className="text-center text-muted-foreground text-sm">This takes about 1–2 minutes — keep this page open. Generating offers, funnel, content & sales scripts...</p>}
           </div>
         </div>
         </PullToRefresh>

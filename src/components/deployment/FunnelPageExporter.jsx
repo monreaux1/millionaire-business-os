@@ -1,10 +1,11 @@
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { readableOn } from "@/lib/color-contrast";
 import { Copy, Check, Code2, Layout, ShoppingCart, TrendingUp, PartyPopper } from "lucide-react";
 
 function buildLandingHTML(page, brand, funnelName) {
-  const primary = brand?.primary_color || "#ff5722";
-  const secondary = brand?.secondary_color || "#1a1a2e";
+  const primary = readableOn(brand?.primary_color || "#ff5722", "#ffffff", 2.5);
+  const secondary = readableOn(brand?.secondary_color || "#1a1a2e", "#ffffff");
   const hFont = brand?.headline_font || "Inter, sans-serif";
   const bFont = brand?.body_font || "Inter, sans-serif";
 
@@ -76,8 +77,8 @@ function buildLandingHTML(page, brand, funnelName) {
 }
 
 function buildOrderHTML(page, brand, funnelName) {
-  const primary = brand?.primary_color || "#ff5722";
-  const secondary = brand?.secondary_color || "#1a1a2e";
+  const primary = readableOn(brand?.primary_color || "#ff5722", "#ffffff", 2.5);
+  const secondary = readableOn(brand?.secondary_color || "#1a1a2e", "#ffffff");
   const hFont = brand?.headline_font || "Inter, sans-serif";
   const bFont = brand?.body_font || "Inter, sans-serif";
 
@@ -104,8 +105,8 @@ function buildOrderHTML(page, brand, funnelName) {
 }
 
 function buildUpsellHTML(page, brand, funnelName) {
-  const primary = brand?.primary_color || "#ff5722";
-  const secondary = brand?.secondary_color || "#1a1a2e";
+  const primary = readableOn(brand?.primary_color || "#ff5722", "#ffffff", 2.5);
+  const secondary = readableOn(brand?.secondary_color || "#1a1a2e", "#ffffff");
   const hFont = brand?.headline_font || "Inter, sans-serif";
   const bFont = brand?.body_font || "Inter, sans-serif";
 
@@ -126,8 +127,8 @@ function buildUpsellHTML(page, brand, funnelName) {
 }
 
 function buildThankYouHTML(page, brand, funnelName) {
-  const primary = brand?.primary_color || "#ff5722";
-  const secondary = brand?.secondary_color || "#1a1a2e";
+  const primary = readableOn(brand?.primary_color || "#ff5722", "#ffffff", 2.5);
+  const secondary = readableOn(brand?.secondary_color || "#1a1a2e", "#ffffff");
   const hFont = brand?.headline_font || "Inter, sans-serif";
   const bFont = brand?.body_font || "Inter, sans-serif";
 

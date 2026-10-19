@@ -1,5 +1,6 @@
 import { createClientFromRequest } from "../_lib/base44-compat.js";
 import { callClaude } from "../_lib/claude.js";
+import { sanitizeFunnelCopy } from "../_lib/funnel-sanitize.js";
 const DEFAULT_ANTHROPIC_MODEL = "claude-sonnet-5-5";
 const BASE44_MODEL = "claude_sonnet_4_6";
 async function generateWithAnthropic(apiKey, prompt, schema) {
@@ -146,6 +147,12 @@ DESIGN THE FUNNEL ASSETS. For every page/asset provide:
 ${isPaid ? `Build ALL pages: Landing Page, Order Page, Upsell Page, Thank-You Page, plus a primary Ad Creative.` : `Build a Landing Page with lead capture and a Thank-You/Access Page. Do not build an order or upsell page. Also create a primary Ad Creative.`}
 
 Be brutally specific \u2014 give exact headlines, exact button text, exact color hex suggestions, and exact layout instructions a designer could hand to a graphic designer or paste into a builder.
+
+COPY RULES (very important):
+- Visitor-facing fields (headline, subhead, bullets, pain points, offer stack, guarantee, urgency, CTA text, section copy, order/upsell copy, next_steps, onboarding_instructions) are published word-for-word to real customers. Write ONLY the words a visitor reads there.
+- Never put layout, colors, hex codes, fonts, icons, image ideas, button styling or notes to a designer in those fields. Put all visual direction in brand_system, hero_visual_direction, sections[].visual_direction, ad_creative.visual_direction, or the page's design_notes field.
+- Never write placeholders such as "(connect URL after generation)", "[insert link]" or "{{name}}". If a link is unknown, leave community_link empty and write the step without mentioning a link.
+- next_steps are short instructions to the new lead (e.g. "Check your inbox for the checklist"), one sentence each.
 `;
   const FUNNEL_SCHEMA = {
     type: "object",
@@ -262,6 +269,7 @@ IMPORTANT: Your previous answer was missing pages. You MUST include landing_page
   if (!hasCorePages(funnel)) {
     return Response.json({ error: "The AI did not return the landing and thank-you pages. Please try again." }, { status: 502 });
   }
+  sanitizeFunnelCopy(funnel);
   funnel.generated_with = engine;
   funnel.funnel_goal = normalizedGoal;
   funnel.connected_asset = { title: asset_title || "", type: asset_type || "" };

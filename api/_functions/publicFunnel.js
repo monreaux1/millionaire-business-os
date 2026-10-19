@@ -1,4 +1,13 @@
 import { createClientFromRequest } from "../_lib/base44-compat.js";
+import { sanitizeFunnelCopy } from "../_lib/funnel-sanitize.js";
+// Visitor-safe copy: strip designer notes and never send them to the public page.
+const publicFunnelData = (data) => {
+  const funnel = sanitizeFunnelCopy(structuredClone(data || {}));
+  for (const key of ["landing_page", "order_page", "upsell_page", "thank_you_page"]) {
+    if (funnel[key]) delete funnel[key].design_notes;
+  }
+  return funnel;
+};
 const json = (body, status = 200) => Response.json(body, { status });
 const clean = (value, max = 180) => String(value || "").trim().slice(0, max);
 const validSlug = (value) => /^[a-z0-9][a-z0-9-]{2,79}$/.test(value);
@@ -42,7 +51,7 @@ async function main(req) {
     const publicProject = {
       id: project.id,
       name: clean(project.name, 160),
-      funnel_data: project.funnel_data || {},
+      funnel_data: publicFunnelData(project.funnel_data),
       page_connections: connections,
       payment: {
         type: clean(project.payment_settings?.type, 40),
