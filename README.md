@@ -57,7 +57,10 @@ refunded automatically, admins make videos free. Finished videos are copied to S
 
 1. Supabase → SQL Editor → run `supabase/migrations/003_video.sql`.
 2. Add `KIE_KEY` (kie.ai) or `FAL_KEY` (fal.ai) in Vercel, then redeploy. kie is used when both are set; override with `VIDEO_PROVIDER`. Optional: `VIDEO_MODEL`.
-3. No new Stripe setup: packs use the same keys and webhook as plans. Edit pack sizes and prices in
+3. Every member with an active plan gets 1 free video once (`WELCOME_VIDEO_CREDITS`, 0 turns it off).
+   Members can add an optional reference photo (themselves or their product) after confirming they
+   own it or have permission; it becomes the video's opening frame.
+4. No new Stripe setup: packs use the same keys and webhook as plans. Edit pack sizes and prices in
    `api/_lib/video.js` (`CREDIT_PACKS`).
 
 ## Brand Board

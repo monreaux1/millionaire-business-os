@@ -73,6 +73,7 @@ export async function requireUser(req) {
 }
 
 export const adminDb = () => createEntityStore(getAdmin());
+export const supabaseUrl = () => SUPABASE_URL;
 
 export function readBody(req) {
   if (!req.body) return {};

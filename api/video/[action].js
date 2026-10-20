@@ -8,7 +8,7 @@ import { postHandler, requireUser, adminDb, HttpError } from "../_lib/server.js"
 import { getStripe, appOrigin, requireActiveSubscription, isAdminUser, billingEnabled } from "../_lib/billing.js";
 import {
   videoEnabled, publicPacks, packFor, creditBalance, addCredits, grantPurchase,
-  requireCredit, submitVideo, checkVideo, keepVideo,
+  requireCredit, submitVideo, checkVideo, keepVideo, ensureWelcomeCredit, ownUploadUrl,
 } from "../_lib/video.js";
 
 export const config = { maxDuration: 120 };
@@ -28,7 +28,9 @@ async function credits(user) {
   let recent = [];
   let balance = 0;
   let ready = true;
+  let welcomed = false;
   try {
+    if (videoEnabled()) welcomed = await ensureWelcomeCredit(user);
     recent = await adminDb().VideoJob.filter({ created_by_id: user.id }, "-created_date", 12);
     balance = await creditBalance(user.id);
   } catch (error) {
@@ -41,6 +43,7 @@ async function credits(user) {
     billing: billingEnabled(),
     unlimited: isAdminUser(user),
     balance,
+    welcomed,
     packs: publicPacks(),
     recent: recent.map(jobView),
   };
@@ -84,13 +87,26 @@ async function confirm(user, body) {
 async function start(user, body) {
   if (!videoEnabled()) throw new HttpError(503, "Video ads aren't switched on yet.");
   await requireActiveSubscription(user);
+  await ensureWelcomeCredit(user);
   const { free } = await requireCredit(user);
+
+  // Optional reference photo: the member themself or their product. They must
+  // confirm they own it / have permission, since it becomes the video's first frame.
+  const imageUrl = ownUploadUrl(user, body.image_url);
+  const photoKind = body.photo_kind === "product" ? "product" : "person";
+  if (imageUrl && body.photo_consent !== true) {
+    throw new HttpError(400, "Confirm the photo is you or your product (or that you have permission) to use it.");
+  }
 
   // Shots carry the spoken line; the shared look ("style") is added to each.
   // The line goes first so it survives per-shot length limits.
   // "Talking head" is ad jargon that video models take literally (they draw an
   // extra head), so it is rewritten, and every shot gets the same guardrails.
-  const style = clip(`${String(body.style || "").replace(/talking[\s-]*heads?/gi, "one person speaking directly to the camera, framed from the chest up")} Exactly one person in frame, realistic human anatomy, no reflections of the person, not holding any cards, papers or signs, no written words anywhere in the scene.`, 900);
+  const photoLine = !imageUrl ? ""
+    : photoKind === "product"
+      ? " Feature the exact product shown in the reference photo; keep its look, colors and packaging unchanged."
+      : " The person must look exactly like the person in the reference photo: same face, hair, skin tone and clothing.";
+  const style = clip(`${String(body.style || "").replace(/talking[\s-]*heads?/gi, "one person speaking directly to the camera, framed from the chest up")} Exactly one person in frame, realistic human anatomy, no reflections of the person, ${photoKind === "product" && imageUrl ? "no on-screen text overlays" : "not holding any cards, papers or signs, no written words anywhere in the scene"}.${photoLine}`, 1000);
   const shots = (Array.isArray(body.shots) ? body.shots : [])
     .slice(0, 6)
     .map((s) => ({
@@ -112,7 +128,7 @@ async function start(user, body) {
   const prompt = clip(body.prompt, 2500);
   if (!fitted.length && !prompt) throw new HttpError(400, "Write the ad script first.");
 
-  const submitted = await submitVideo({ shots: fitted, prompt, duration: 15 });
+  const submitted = await submitVideo({ shots: fitted, prompt, duration: 15, imageUrl });
   const owner = { id: user.id, email: user.email };
   const job = await adminDb().VideoJob.create({
     status: "queued",
@@ -123,6 +139,7 @@ async function start(user, body) {
     status_url: submitted.status_url || "",
     response_url: submitted.response_url || "",
     seconds: total || 15,
+    reference_photo: imageUrl ? photoKind : "",
     charged: !free,
   }, { as: owner });
   if (!free) await addCredits(user.id, -1, { reason: "video", job_id: job.id });

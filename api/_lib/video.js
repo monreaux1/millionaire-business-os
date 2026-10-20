@@ -1,7 +1,7 @@
 // AI video ads: credit packs (one-time Stripe purchases), a credit ledger,
 // and video generation through kie.ai (KIE_KEY) or fal.ai (FAL_KEY).
-import { adminDb, getAdmin, HttpError } from "./server.js";
-import { isAdminUser } from "./billing.js";
+import { adminDb, getAdmin, HttpError, supabaseUrl } from "./server.js";
+import { isAdminUser, accessFor } from "./billing.js";
 
 // 1 credit = 1 finished video ad (up to 15 seconds, vertical, with audio).
 // Edit these to change pack sizes or prices — no Stripe setup needed.
@@ -64,6 +64,34 @@ export async function grantPurchase(session) {
   }
 }
 
+// Every member gets WELCOME_VIDEO_CREDITS free video(s) once (default 1), so they
+// can see what video ads look like before buying a pack. 0 turns it off.
+const welcomeCredits = () => {
+  const n = Number(process.env.WELCOME_VIDEO_CREDITS ?? 1);
+  return Number.isFinite(n) ? Math.max(0, Math.min(5, Math.floor(n))) : 1;
+};
+export async function ensureWelcomeCredit(user) {
+  const amount = welcomeCredits();
+  if (!amount || isAdminUser(user)) return false;
+  const access = await accessFor(user);
+  if (!access.active) return false;
+  const existing = await adminDb().VideoCredit.filter({ created_by_id: user.id, reason: "welcome" }, "-created_date", 1);
+  if (existing.length) return false;
+  await addCredits(user.id, amount, { reason: "welcome", stripe_session_id: `welcome:${user.id}` });
+  return true;
+}
+
+// Reference photos must be files this user uploaded to our storage.
+export function ownUploadUrl(user, url) {
+  const value = String(url || "").trim();
+  if (!value) return "";
+  const prefix = `${supabaseUrl()}/storage/v1/object/public/uploads/${user.id}/`;
+  if (!value.startsWith(prefix) || !/\.(jpe?g|png|webp)$/i.test(value.split("?")[0])) {
+    throw new HttpError(400, "Upload the reference photo again (JPG, PNG or WEBP).");
+  }
+  return value;
+}
+
 export async function requireCredit(user) {
   if (isAdminUser(user)) return { free: true };
   const balance = await creditBalance(user.id);
@@ -89,7 +117,7 @@ async function falFetch(url, init = {}) {
 }
 
 // Sends the ad as one multi-shot video so the same person carries through.
-async function submitFal({ shots, prompt, duration = 15, aspectRatio = "9:16" }) {
+async function submitFal({ shots, prompt, duration = 15, aspectRatio = "9:16", imageUrl = "" }) {
   const input = { aspect_ratio: aspectRatio, generate_audio: true, negative_prompt: "blur, distort, low quality, text artifacts, extra fingers" };
   if (Array.isArray(shots) && shots.length) {
     input.multi_prompt = shots.map((s) => ({ prompt: s.prompt, duration: String(s.duration) }));
@@ -97,12 +125,17 @@ async function submitFal({ shots, prompt, duration = 15, aspectRatio = "9:16" })
     input.prompt = prompt;
     input.duration = String(duration);
   }
-  const data = await falFetch(`${FAL_QUEUE}/${videoModel()}`, { method: "POST", body: JSON.stringify(input) });
+  let model = videoModel("fal");
+  if (imageUrl) {
+    input.image_url = imageUrl;
+    model = model.replace(/text-to-video$/, "image-to-video");
+  }
+  const data = await falFetch(`${FAL_QUEUE}/${model}`, { method: "POST", body: JSON.stringify(input) });
   if (!data.request_id) throw new HttpError(502, "The video service didn't return a job id.");
-  const base = `${FAL_QUEUE}/${videoModel()}/requests/${data.request_id}`;
+  const base = `${FAL_QUEUE}/${model}/requests/${data.request_id}`;
   return {
     provider: "fal",
-    model: videoModel("fal"),
+    model,
     request_id: data.request_id,
     status_url: data.status_url || `${base}/status`,
     response_url: data.response_url || base,
@@ -149,9 +182,11 @@ async function kieFetch(url, init = {}) {
   return data.data || {};
 }
 
-async function submitKie({ shots, prompt, duration = 15, aspectRatio = "9:16" }) {
+async function submitKie({ shots, prompt, duration = 15, aspectRatio = "9:16", imageUrl = "" }) {
   const model = videoModel("kie");
   const input = { aspect_ratio: aspectRatio, sound: true, mode: ["std", "pro"].includes(process.env.VIDEO_MODE) ? process.env.VIDEO_MODE : "std" };
+  // The reference photo becomes the opening frame (kie: image_urls[0]).
+  if (imageUrl) input.image_urls = [imageUrl];
   if (Array.isArray(shots) && shots.length) {
     // kie limits: 1–12 seconds and 500 characters per shot.
     input.multi_shots = true;
