@@ -73,7 +73,7 @@ export async function requireCredit(user) {
 
 // ── fal.ai queue ──────────────────────────────────────────────────────────
 const FAL_QUEUE = "https://queue.fal.run";
-const falHeaders = () => ({ Authorization: `Key ${String(process.env.FAL_KEY || "").trim()}`, "Content-Type": "application/json" });
+const falHeaders = () => ({ Authorization: `Key ${String(process.env.FAL_KEY || "").replace(/\s+/g, "")}`, "Content-Type": "application/json" });
 
 async function falFetch(url, init = {}) {
   const res = await fetch(url, { ...init, headers: { ...falHeaders(), ...(init.headers || {}) } });
@@ -131,7 +131,7 @@ async function checkFal(job) {
 
 // ── kie.ai ────────────────────────────────────────────────────────────────
 const KIE_API = "https://api.kie.ai/api/v1/jobs";
-const kieHeaders = () => ({ Authorization: `Bearer ${String(process.env.KIE_KEY || "").trim()}`, "Content-Type": "application/json" });
+const kieHeaders = () => ({ Authorization: `Bearer ${String(process.env.KIE_KEY || "").replace(/\s+/g, "")}`, "Content-Type": "application/json" });
 
 // kie returns HTTP 200 with an error code in the body, so check `code`.
 async function kieFetch(url, init = {}) {

@@ -2,7 +2,7 @@
 // Events: checkout.session.completed (plans + video credit packs),
 //         customer.subscription.created/updated/deleted
 import { sendJson } from "../_lib/server.js";
-import { getStripe, upsertSubscription } from "../_lib/billing.js";
+import { getStripe, upsertSubscription, env } from "../_lib/billing.js";
 import { grantPurchase } from "../_lib/video.js";
 
 async function rawBody(req) {
@@ -14,7 +14,7 @@ async function rawBody(req) {
 
 export default async function handler(req, res) {
   if (req.method !== "POST") return sendJson(res, 405, { error: "Method not allowed" });
-  const secret = process.env.STRIPE_WEBHOOK_SECRET;
+  const secret = env("STRIPE_WEBHOOK_SECRET");
   if (!secret) return sendJson(res, 500, { error: "STRIPE_WEBHOOK_SECRET is not set" });
 
   let event;

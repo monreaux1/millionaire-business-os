@@ -16,7 +16,7 @@ async function requestClaude(body) {
   const res = await fetch(API_URL, {
     method: "POST",
     headers: {
-      "x-api-key": apiKey,
+      "x-api-key": String(apiKey || "").replace(/\s+/g, ""),
       "anthropic-version": "2023-06-01",
       "content-type": "application/json",
       // Needed only for organization-level keys that aren't tied to a workspace.

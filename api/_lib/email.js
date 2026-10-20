@@ -2,7 +2,7 @@
 import { HttpError } from "./server.js";
 
 export async function sendEmail({ to, subject, text, fromName } = {}) {
-  const apiKey = process.env.RESEND_API_KEY;
+  const apiKey = String(process.env.RESEND_API_KEY || "").replace(/\s+/g, "");
   const fromAddress = process.env.EMAIL_FROM; // e.g. briefing@yourdomain.com (verified in Resend)
   if (!apiKey || !fromAddress) throw new HttpError(500, "Email is not configured yet (RESEND_API_KEY / EMAIL_FROM).");
 

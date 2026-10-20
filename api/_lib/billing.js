@@ -15,25 +15,28 @@ export const PLANS = [
     blurb: "Everything in Pro plus a monthly live strategy call and a funnel review." },
 ];
 
+// Values pasted into Vercel sometimes carry stray spaces, tabs or line breaks.
+export const env = (name) => String(process.env[name] || "").replace(/\s+/g, "");
+
 const ACTIVE_STATUSES = ["active", "trialing", "past_due"];
 const foundingLimit = () => Number(process.env.FOUNDING_LIMIT || 50);
 
-export const billingEnabled = () => Boolean(process.env.STRIPE_SECRET_KEY);
+export const billingEnabled = () => Boolean(env("STRIPE_SECRET_KEY"));
 
 let stripeClient;
 export function getStripe() {
   if (!billingEnabled()) throw new HttpError(500, "Billing is not configured (missing STRIPE_SECRET_KEY).");
   if (!stripeClient) {
-    stripeClient = new Stripe(process.env.STRIPE_SECRET_KEY, { httpClient: Stripe.createFetchHttpClient() });
+    stripeClient = new Stripe(env("STRIPE_SECRET_KEY"), { httpClient: Stripe.createFetchHttpClient() });
   }
   return stripeClient;
 }
 
 export const priceIdFor = (planKey) => {
   const plan = PLANS.find((p) => p.key === planKey);
-  return plan ? process.env[plan.env] || "" : "";
+  return plan ? env(plan.env) : "";
 };
-const planForPrice = (priceId) => PLANS.find((p) => process.env[p.env] && process.env[p.env] === priceId)?.key || "";
+const planForPrice = (priceId) => PLANS.find((p) => env(p.env) && env(p.env) === priceId)?.key || "";
 
 export const isAdminUser = (user) => user?.role === "admin";
 
@@ -75,7 +78,7 @@ export async function availablePlans() {
     ? (await countActiveFounding()) >= foundingLimit()
     : false;
   return PLANS
-    .filter((p) => process.env[p.env])
+    .filter((p) => env(p.env))
     .map(({ key, name, price, interval, blurb }) => ({
       key, name, price, interval, blurb,
       available: key === "founding" ? !foundingFull : true,
@@ -119,7 +122,7 @@ export async function upsertSubscription(stripeSub, userIdHint) {
 }
 
 export function appOrigin(req) {
-  const configured = String(process.env.APP_URL || "").replace(/\/+$/, "");
+  const configured = env("APP_URL").replace(/\/+$/, "");
   if (configured) return configured;
   const host = req.headers?.["x-forwarded-host"] || req.headers?.host;
   if (!host || !/^[A-Za-z0-9.-]+(:\d+)?$/.test(host)) throw new HttpError(500, "Set APP_URL in Vercel.");
