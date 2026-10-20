@@ -1,3 +1,4 @@
+import SupportChat from '@/components/SupportChat';
 import { useEffect, useState, useCallback, Suspense, lazy } from "react";
 import { getBillingStatus } from "@/lib/billing";
 import { Toaster } from "@/components/ui/toaster"
@@ -259,6 +260,7 @@ function App() {
       <QueryClientProvider client={queryClientInstance}>
         <Router>
           <AppRouter />
+          <SupportChat />
         </Router>
         <Toaster />
       </QueryClientProvider>
