@@ -35,7 +35,26 @@ function useLightLogo(src) {
           }
         }
         ctx.putImageData(data, 0, 0);
-        if (!cancelled) setUrl(canvas.toDataURL("image/png"));
+        // Trim the transparent margin so the logo fills its space.
+        let top = height, left = width, right = 0, bottom = 0;
+        for (let y = 0; y < height; y += 1) {
+          for (let x = 0; x < width; x += 1) {
+            if (px[(y * width + x) * 4 + 3] > 16) {
+              if (x < left) left = x;
+              if (x > right) right = x;
+              if (y < top) top = y;
+              if (y > bottom) bottom = y;
+            }
+          }
+        }
+        let out = canvas;
+        if (right > left && bottom > top) {
+          out = document.createElement("canvas");
+          out.width = right - left + 1;
+          out.height = bottom - top + 1;
+          out.getContext("2d").drawImage(canvas, left, top, out.width, out.height, 0, 0, out.width, out.height);
+        }
+        if (!cancelled) setUrl(out.toDataURL("image/png"));
       } catch {
         /* cross-origin blocked: keep the text wordmark */
       }

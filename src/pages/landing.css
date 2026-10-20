@@ -82,8 +82,8 @@ html.lp-root, html.lp-root body { background: #140e33; }
 .lp-nav { display: flex; justify-content: space-between; align-items: center; padding: 22px 0; }
 .lp-wordmark { font-family: var(--display); font-weight: 600; font-size: 1.05rem; letter-spacing: -0.01em; }
 .lp-wordmark b { color: var(--gold); font-weight: 800; }
-.lp-logo { display: block; height: clamp(44px, 6vw, 64px); width: auto; animation: lp-rise 0.9s cubic-bezier(.2,.7,.1,1) both; }
-.lp-logo-sm { height: 34px; animation: none; }
+.lp-logo { display: block; height: clamp(46px, 5.5vw, 72px); width: auto; animation: lp-rise 0.9s cubic-bezier(.2,.7,.1,1) both; }
+.lp-logo-sm { height: 40px; animation: none; }
 .lp-nav-link { text-decoration: none; font-weight: 600; padding: 10px 16px; border-radius: 999px; border: 1px solid var(--line); }
 .lp-nav-link:hover { border-color: var(--muted); }
 .lp-hero-copy { margin-top: auto; max-width: 1100px; }
