@@ -25,12 +25,22 @@ const jobView = (job) => ({
 const clip = (value, max) => String(value || "").replace(/\s+/g, " ").trim().slice(0, max);
 
 async function credits(user) {
-  const recent = await adminDb().VideoJob.filter({ created_by_id: user.id }, "-created_date", 12);
+  let recent = [];
+  let balance = 0;
+  let ready = true;
+  try {
+    recent = await adminDb().VideoJob.filter({ created_by_id: user.id }, "-created_date", 12);
+    balance = await creditBalance(user.id);
+  } catch (error) {
+    // Tables missing until 003_video.sql is run: show "coming soon" instead of an error.
+    console.error("video tables unavailable", error?.message);
+    ready = false;
+  }
   return {
-    enabled: videoEnabled(),
+    enabled: videoEnabled() && ready,
     billing: billingEnabled(),
     unlimited: isAdminUser(user),
-    balance: await creditBalance(user.id),
+    balance,
     packs: publicPacks(),
     recent: recent.map(jobView),
   };
