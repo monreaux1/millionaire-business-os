@@ -1,7 +1,9 @@
 // Stripe → database. Endpoint: https://YOUR-APP/api/billing/webhook
-// Events: checkout.session.completed, customer.subscription.created/updated/deleted
+// Events: checkout.session.completed (plans + video credit packs),
+//         customer.subscription.created/updated/deleted
 import { sendJson } from "../_lib/server.js";
 import { getStripe, upsertSubscription } from "../_lib/billing.js";
+import { grantPurchase } from "../_lib/video.js";
 
 async function rawBody(req) {
   if (typeof req.rawBody === "string" || Buffer.isBuffer(req.rawBody)) return req.rawBody;
@@ -30,6 +32,8 @@ export default async function handler(req, res) {
     if (event.type === "checkout.session.completed" && object.mode === "subscription" && object.subscription) {
       const id = typeof object.subscription === "string" ? object.subscription : object.subscription.id;
       await upsertSubscription(await stripe.subscriptions.retrieve(id), object.client_reference_id);
+    } else if (event.type === "checkout.session.completed" && object.mode === "payment" && object.metadata?.kind === "video_credits") {
+      await grantPurchase(object);
     } else if (event.type.startsWith("customer.subscription.")) {
       await upsertSubscription(object);
     }

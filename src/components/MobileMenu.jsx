@@ -15,7 +15,7 @@ const NAV = [
   { label: "Launch Calendar",   path: "/LaunchCalendar",       icon: Calendar },
   { label: "Launch Partner",    path: "/LaunchPartner",        icon: Rocket },
   { label: "Daily Briefing",    path: "/EmailBriefing",         icon: Mail },
-  { label: "Brand Profile",     path: "/BrandProfile",         icon: Palette },
+  { label: "Brand Board",       path: "/BrandProfile",         icon: Palette },
   { label: "Idea Intake",       path: "/IdeaIntake",          icon: Lightbulb },
   { label: "Offer Builder",     path: "/FunnelBrain",         icon: Brain },
   { label: "Offer Ladder",      path: "/OfferLadder",         icon: Layers },

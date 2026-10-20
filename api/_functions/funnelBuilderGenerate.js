@@ -18,6 +18,31 @@ async function generateFunnelJson(base44, prompt, schema) {
   return { funnel: result?.response || result, engine: "base44" };
 }
 const hasCorePages = (funnel) => Boolean(funnel?.landing_page && funnel?.thank_you_page);
+const HEX = /^#[0-9a-f]{3}([0-9a-f]{3})?$/i;
+// The user's saved Brand Board always wins over AI-picked colors, fonts and logo.
+function applyBrandBoard(funnel, brand, fallbackLogo) {
+  const system = { ...(funnel.brand_system || {}) };
+  const color = (key, from) => { if (HEX.test(String(brand?.[from] || ""))) system[key] = brand[from]; };
+  if (brand) {
+    color("primary_color", "primary_color");
+    color("secondary_color", "secondary_color");
+    color("accent_color", "accent_color");
+    color("background_color", "background_color");
+    color("text_color", "text_color");
+    if (brand.heading_font) system.headline_font = brand.heading_font;
+    if (brand.body_font) system.body_font = brand.body_font;
+    if (brand.brand_name) system.brand_name = brand.brand_name;
+    if (brand.visual_style) system.imagery_direction = system.imagery_direction || brand.visual_style;
+    for (const key of ["website", "email", "phone", "booking_link", "privacy_url", "terms_url", "copyright_text"]) {
+      if (brand[key]) system[key] = brand[key];
+    }
+  }
+  const logo = brand?.logo_url || fallbackLogo;
+  if (/^https?:\/\//.test(String(logo || ""))) system.logo_url = logo;
+  system.from_brand_board = Boolean(brand);
+  funnel.brand_system = system;
+  return funnel;
+}
 async function handle(req) {
   const base44Client = createClientFromRequest(req);
   try {
@@ -45,6 +70,7 @@ async function handle(req) {
     platform,
     custom_context,
     logo_url,
+    brand_profile_id,
     subject_photo_url,
     dream_outcome,
     unique_advantage,
@@ -90,6 +116,17 @@ FUNNEL MAP ALREADY SUGGESTED (use as the structural blueprint):
 - Funnel type: ${generated_funnel_map.funnel_type || "N/A"}
 - Deployment notes: ${generated_funnel_map.deployment_notes || "N/A"}
 ` : "";
+  const brandBoard = brand_profile_id
+    ? await base44Client.entities.BrandProfile.get(String(brand_profile_id)).catch(() => null)
+    : null;
+  const brandVoice = brandBoard
+    ? [
+        brandBoard.brand_voice && `- Brand voice: ${String(brandBoard.brand_voice).slice(0, 600)}`,
+        brandBoard.tone && `- Tone: ${String(brandBoard.tone).slice(0, 300)}`,
+        brandBoard.phrases_to_use && `- Phrases to use: ${String(brandBoard.phrases_to_use).slice(0, 400)}`,
+        brandBoard.phrases_to_avoid && `- Never say: ${String(brandBoard.phrases_to_avoid).slice(0, 400)}`,
+      ].filter(Boolean).join("\n")
+    : "";
   const prompt = `
 You are a world-class direct-response funnel designer, conversion copywriter, and digital design strategist.
 
@@ -128,6 +165,7 @@ BRAND ASSETS:
 - Colors: ${brand_colors || "Not specified \u2014 choose based on visual mode"}
 - Fonts: ${brand_fonts || "Not specified \u2014 choose based on visual mode"}
 - Logo: ${logo_url ? "Provided (use in header)" : "None \u2014 use business name as wordmark"}
+${brandVoice ? `BRAND BOARD (follow exactly — write all copy in this voice):\n${brandVoice}` : ""}
 - Subject Photo: ${subject_photo_url ? "Provided (feature prominently)" : "None"}
 
 URGENCY MECHANISM: ${urgency_mechanism || "None specified"}
@@ -270,6 +308,7 @@ IMPORTANT: Your previous answer was missing pages. You MUST include landing_page
     return Response.json({ error: "The AI did not return the landing and thank-you pages. Please try again." }, { status: 502 });
   }
   sanitizeFunnelCopy(funnel);
+  applyBrandBoard(funnel, brandBoard, logo_url);
   funnel.generated_with = engine;
   funnel.funnel_goal = normalizedGoal;
   funnel.connected_asset = { title: asset_title || "", type: asset_type || "" };

@@ -5,7 +5,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { base44 } from "@/api/base44Client";
 import { accountStorage } from "@/lib/account-storage";
-import { Copy, CheckCheck, Zap, Loader2, TrendingUp, Video, Type, Eye, Scissors, Film, Download, RefreshCw } from "lucide-react";
+import { Copy, CheckCheck, Zap, Loader2, TrendingUp, Video, Type, Eye, Scissors, Film, Download, RefreshCw, Coins } from "lucide-react";
+import { getVideoCredits, buyVideoCredits, confirmVideoCredits, startVideo, waitForVideo } from "@/lib/video";
 
 function CopyBtn({ text }) {
   const [copied, setCopied] = useState(false);
@@ -30,7 +31,7 @@ const TABS = [
   { id: "visual", label: "👁️ Visual Direction", icon: Eye },
   { id: "editing", label: "✂️ Editing Style", icon: Scissors },
   { id: "performance", label: "📊 Performance", icon: TrendingUp },
-  // Video ads were a Base44-only feature; hidden until a video provider is connected.
+  { id: "video", label: "🎥 Video Ad", icon: Film },
 ];
 
 export default function AdEngine() {
@@ -42,10 +43,13 @@ export default function AdEngine() {
   const [perf, setPerf] = useState({ views: "", ctr: "", conversions: "" });
   const [perfFeedback, setPerfFeedback] = useState(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [videoScenes, setVideoScenes] = useState([]);
-  const [activeScene, setActiveScene] = useState(0);
   const [isGeneratingVideo, setIsGeneratingVideo] = useState(false);
   const [videoProgress, setVideoProgress] = useState("");
+  const [videoInfo, setVideoInfo] = useState(null);
+  const [videoJob, setVideoJob] = useState(null);
+  const [videoError, setVideoError] = useState("");
+  const [videoNotice, setVideoNotice] = useState("");
+  const [buyingPack, setBuyingPack] = useState("");
   const [characterDesc, setCharacterDesc] = useState("");
 
   const loadLaunchData = () => {
@@ -54,6 +58,44 @@ export default function AdEngine() {
   };
 
   useEffect(() => { loadLaunchData(); }, []);
+
+  const loadVideoCredits = async () => {
+    try { setVideoInfo(await getVideoCredits()); } catch { /* video is optional */ }
+  };
+
+  useEffect(() => {
+    (async () => {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get("credits") === "success" && params.get("session_id")) {
+        setActiveTab("video");
+        try {
+          const result = await confirmVideoCredits(params.get("session_id"));
+          setVideoNotice(result.paid ? "Credits added. You're ready to make video ads." : "Payment received. Your credits will appear in a minute.");
+        } catch (e) {
+          setVideoError(e?.data?.error || e?.message || "Couldn't confirm your purchase. Refresh in a minute.");
+        }
+        window.history.replaceState({}, "", "/AdEngine");
+      } else if (params.get("credits") === "canceled") {
+        setActiveTab("video");
+        setVideoNotice("Checkout canceled. No charge was made.");
+        window.history.replaceState({}, "", "/AdEngine");
+      }
+      loadVideoCredits();
+    })();
+  }, []);
+
+  const buyPack = async (packKey) => {
+    setBuyingPack(packKey);
+    setVideoError("");
+    try {
+      const { url } = await buyVideoCredits(packKey);
+      window.location.assign(url);
+      return;
+    } catch (e) {
+      setVideoError(e?.data?.error || e?.message || "Couldn't start checkout. Please try again.");
+    }
+    setBuyingPack("");
+  };
 
   const businessContext = launchData
     ? `Business: ${launchData.intake?.what || "coaching/service business"}. Target: ${launchData.intake?.who || "entrepreneurs"}. Problem solved: ${launchData.intake?.problem || "not specified"}. Result: ${launchData.intake?.result || "not specified"}.`
@@ -166,39 +208,41 @@ Give a JSON response with:
   const generateVideoAd = async () => {
     if (!ads) return;
     setIsGeneratingVideo(true);
-    setVideoScenes([]);
-    setActiveScene(0);
+    setVideoError("");
+    setVideoNotice("");
+    setVideoJob(null);
     const vd = ads.visual_direction || {};
-    const onscreen = ads.onscreen_text || {};
     const script = ads.script || {};
-    const modeLabel = MODES.find(m => m.id === mode)?.label || "UGC Style";
-    const personClause = characterDesc
-      ? `The SAME person appears in every scene: ${characterDesc}. Keep this person's appearance identical across all scenes.`
-      : `Person wears ${vd.wardrobe || "everyday casual clothing"}.`;
-    const baseStyle = `Vertical 9:16 UGC (user-generated content) style video ad for ${launchData?.intake?.what || "a coaching/service business"}. ${modeLabel} tone. ${vd.style || "talking head"} style, filmed in ${vd.setting || "a casual real-world setting"}. ${personClause} Handheld smartphone footage, authentic, relatable, not overly produced — looks like a real person not a brand. Natural lighting. Real-world, slice-of-life feel. The person gestures naturally while talking to camera. Vertical social media ad format for TikTok, Reels, Shorts.`;
-    const scenes = [
-      { key: "hook", label: "🎯 Hook", line: script.hook },
-      { key: "problem", label: "😤 Problem", line: script.problem },
-      { key: "solution", label: "💡 Solution", line: script.solution },
-      { key: "cta", label: "🚀 CTA", line: script.cta },
-    ];
-    const results = [];
-    for (let i = 0; i < scenes.length; i++) {
-      const s = scenes[i];
-      setVideoProgress(`Generating scene ${i + 1} of ${scenes.length}: ${s.label}...`);
-      try {
-        const prompt = `${baseStyle}\n\nThis scene: The person speaks directly to camera saying: "${s.line || ""}".`;
-        const result = await base44.integrations.Core.GenerateVideo({
-          prompt,
-          duration: 8,
-          aspect_ratio: "9:16",
-        });
-        results.push({ ...s, url: result.url });
-        setVideoScenes([...results]);
-      } catch (e) { /* skip failed scene */ }
+    const modeLabel = MODES.find(m => m.id === mode)?.label?.replace(/^\S+\s/, "") || "UGC Style";
+    const person = characterDesc
+      ? `The same person in every shot: ${characterDesc}.`
+      : `A relatable person wearing ${vd.wardrobe || "everyday casual clothing"}.`;
+    const style = `Vertical 9:16 ${modeLabel} video ad for ${launchData?.intake?.what || "a coaching/service business"}. ${vd.style || "Talking head"}, filmed in ${vd.setting || "a casual real-world setting"}. ${person} Handheld smartphone look, natural lighting, authentic, speaking to camera in English.`;
+    const shots = [
+      { line: script.hook, duration: 3 },
+      { line: script.problem, duration: 4 },
+      { line: script.solution, duration: 4 },
+      { line: script.cta, duration: 4 },
+    ].filter((s) => s.line).map((s) => ({ duration: s.duration, prompt: `${style} The person says: "${String(s.line).slice(0, 300)}"` }));
+    try {
+      setVideoProgress("Starting your video…");
+      const { job } = await startVideo({ shots, title: (ads.hooks?.[0] || script.hook || "Video ad").slice(0, 120) });
+      setVideoJob(job);
+      loadVideoCredits();
+      const { job: finished, refunded, timedOut } = await waitForVideo(job.id, (update) => {
+        setVideoJob(update);
+        setVideoProgress(update.status === "queued"
+          ? `Waiting in line${update.position != null ? ` (position ${update.position + 1})` : ""}…`
+          : "Filming your ad… this usually takes 2–5 minutes.");
+      });
+      if (timedOut) setVideoNotice("Still rendering. It will appear under Your videos when it's done — you can leave this page.");
+      else if (finished.status === "failed") setVideoError(`${finished.error || "The video couldn't be generated."}${refunded ? " Your credit was refunded." : ""}`);
+    } catch (e) {
+      setVideoError(e?.data?.error || e?.message || "Couldn't start the video. Please try again.");
     }
     setVideoProgress("");
     setIsGeneratingVideo(false);
+    loadVideoCredits();
   };
 
   const hookTypes = {
@@ -407,84 +451,127 @@ Give a JSON response with:
             {/* VIDEO AD */}
             {activeTab === "video" && (
               <div className="space-y-5">
-                <h2 className="text-foreground font-black text-xl mb-1">Generate a UGC Video Ad — Scene by Scene</h2>
-                <p className="text-muted-foreground text-sm mb-4">
-                  Your ad is built as 4 scenes (Hook → Problem → Solution → CTA), each an 8-second vertical clip. Play them in sequence for the full ~30-second ad, or download each scene to stitch together in any editor.
-                </p>
-
-                <div className="p-5 rounded-xl border border-border bg-card">
-                  <p className="text-foreground font-bold text-sm mb-1">🧑 Character (for consistency)</p>
-                  <p className="text-muted-foreground text-sm mb-3">Describe the person once — the same description is reused in every scene to keep them consistent. The AI can't lock an exact face, so a detailed description is the best way to keep the character stable across clips.</p>
-                  <textarea
-                    value={characterDesc}
-                    onChange={(e) => setCharacterDesc(e.target.value)}
-                    placeholder="e.g. A 30-year-old woman with shoulder-length dark brown hair, wearing a cream sweater, sitting at a kitchen counter"
-                    className="w-full bg-secondary border border-border text-foreground rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-primary/50 min-h-[80px]"
-                  />
-                  <div className="flex flex-wrap gap-2 mt-3">
-                    {[
-                      "A 28-year-old woman with long blonde hair, wearing a white t-shirt, standing in a bright home office",
-                      "A 35-year-old man with short dark hair and stubble, wearing a navy polo, sitting on a couch",
-                      "A 40-year-old woman with curly black hair, wearing a blazer, standing in a modern kitchen",
-                    ].map((preset) => (
-                      <button key={preset} onClick={() => setCharacterDesc(preset)}
-                        className="text-sm px-3 py-1.5 rounded-lg border border-border bg-secondary text-muted-foreground hover:border-primary/40 hover:text-foreground transition-colors">
-                        {preset.split(",")[0]}
-                      </button>
-                    ))}
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <h2 className="text-foreground font-black text-xl mb-1">Turn This Script Into a Video Ad</h2>
+                    <p className="text-muted-foreground text-sm">One vertical 15-second ad (Hook → Problem → Solution → CTA) with voice, ready for TikTok, Reels and Shorts.</p>
                   </div>
+                  {videoInfo?.enabled && (
+                    <div className="flex items-center gap-2 rounded-xl border border-border bg-card px-4 py-2">
+                      <Coins className="w-4 h-4 text-primary" />
+                      <span className="text-sm font-bold text-foreground">
+                        {videoInfo.unlimited ? "Admin: unlimited videos" : `${videoInfo.balance} video credit${videoInfo.balance === 1 ? "" : "s"}`}
+                      </span>
+                    </div>
+                  )}
                 </div>
 
-                {isGeneratingVideo && (
-                  <div className="p-6 rounded-xl border border-border bg-card">
-                    <div className="flex items-center gap-3 mb-2">
-                      <Loader2 className="w-5 h-5 text-primary animate-spin" />
-                      <p className="text-foreground font-bold">{videoProgress || "Starting..."}</p>
-                    </div>
-                    <p className="text-muted-foreground text-sm">Each scene takes ~30–60 seconds. Completed scenes appear below as they finish.</p>
-                  </div>
-                )}
+                {videoNotice && <p className="text-sm text-emerald-700 bg-emerald-50 rounded-lg p-3">{videoNotice}</p>}
+                {videoError && <p className="text-sm text-rose-600 bg-rose-50 rounded-lg p-3">{videoError}</p>}
 
-                {videoScenes.length > 0 && (
-                  <>
-                    <div className="rounded-xl overflow-hidden border border-border bg-black flex justify-center">
-                      <video
-                        key={videoScenes[activeScene]?.url}
-                        src={videoScenes[activeScene]?.url}
-                        controls
-                        autoPlay
-                        onEnded={() => setActiveScene((s) => Math.min(s + 1, videoScenes.length - 1))}
-                        className="max-h-[70vh] mx-auto"
-                      />
-                    </div>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                      {videoScenes.map((sc, i) => (
-                        <button key={sc.key} onClick={() => setActiveScene(i)}
-                          className={`p-3 rounded-xl border text-left transition-all ${activeScene === i ? 'border-primary bg-primary/10' : 'border-border bg-card hover:border-primary/40'}`}>
-                          <p className="font-bold text-sm mb-1">{sc.label}</p>
-                          <p className="text-muted-foreground text-sm line-clamp-2">"{sc.line}"</p>
-                          <a href={sc.url} download={`ugc-scene-${i + 1}.mp4`} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()}
-                            className="text-primary text-sm font-semibold mt-2 inline-flex items-center gap-1">
-                            <Download className="w-3 h-3" /> Download
-                          </a>
-                        </button>
-                      ))}
-                    </div>
-                    <Button onClick={generateVideoAd} variant="outline" className="font-semibold" disabled={isGeneratingVideo}>
-                      <RefreshCw className="w-4 h-4 mr-2" /> Regenerate All Scenes
-                    </Button>
-                  </>
-                )}
-
-                {videoScenes.length === 0 && !isGeneratingVideo && (
+                {videoInfo && !videoInfo.enabled ? (
                   <div className="p-6 rounded-xl border border-dashed border-border bg-card text-center">
                     <Film className="w-10 h-10 text-primary mx-auto mb-3" />
-                    <p className="text-foreground font-semibold mb-1">No video generated yet</p>
-                    <p className="text-muted-foreground text-sm mb-4">Click below to generate 4 scene-by-scene vertical clips from your ad script.</p>
-                    <Button onClick={generateVideoAd} className="accent-gradient hover:opacity-90 text-white font-bold px-8 py-3 rounded-xl">
-                      <Film className="w-4 h-4 mr-2" /> Generate Video Ad (4 Scenes)
-                    </Button>
+                    <p className="text-foreground font-semibold mb-1">Video ads are coming soon</p>
+                    <p className="text-muted-foreground text-sm">Your scripts, hooks and visual direction are ready to use in any video tool in the meantime.</p>
                   </div>
+                ) : (
+                  <>
+                    {videoInfo && !videoInfo.unlimited && videoInfo.balance < 1 && (
+                      <div className="p-5 rounded-xl border border-primary/30 bg-card">
+                        <p className="text-foreground font-bold mb-1">Get video credits</p>
+                        <p className="text-muted-foreground text-sm mb-4">1 credit = 1 finished video ad. Credits never expire. If a video fails, the credit comes back automatically.</p>
+                        <div className="grid sm:grid-cols-3 gap-3">
+                          {(videoInfo.packs || []).map((pack) => (
+                            <div key={pack.key} className={`rounded-xl border p-4 flex flex-col ${pack.key === "creator" ? "border-primary" : "border-border"}`}>
+                              <p className="font-bold text-foreground">{pack.name}</p>
+                              <p className="text-2xl font-black text-foreground mt-1">{pack.price}</p>
+                              <p className="text-muted-foreground text-sm mt-1 flex-1">{pack.blurb}</p>
+                              <Button className="mt-3 accent-gradient text-white font-bold" disabled={Boolean(buyingPack) || !videoInfo.billing} onClick={() => buyPack(pack.key)}>
+                                {buyingPack === pack.key && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                                Buy {pack.credits} credits
+                              </Button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="p-5 rounded-xl border border-border bg-card">
+                      <p className="text-foreground font-bold text-sm mb-1">🧑 Who's in the ad?</p>
+                      <p className="text-muted-foreground text-sm mb-3">Describe the person once. The whole ad is filmed as one video, so they stay the same from start to finish.</p>
+                      <textarea
+                        value={characterDesc}
+                        onChange={(e) => setCharacterDesc(e.target.value)}
+                        placeholder="e.g. A 30-year-old woman with shoulder-length dark brown hair, wearing a cream sweater, sitting at a kitchen counter"
+                        className="w-full bg-secondary border border-border text-foreground rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-primary/50 min-h-[80px]"
+                      />
+                      <div className="flex flex-wrap gap-2 mt-3">
+                        {[
+                          "A 28-year-old woman with long blonde hair, wearing a white t-shirt, standing in a bright home office",
+                          "A 35-year-old man with short dark hair and stubble, wearing a navy polo, sitting on a couch",
+                          "A 40-year-old woman with curly black hair, wearing a blazer, standing in a modern kitchen",
+                        ].map((preset) => (
+                          <button key={preset} onClick={() => setCharacterDesc(preset)}
+                            className="text-sm px-3 py-1.5 rounded-lg border border-border bg-secondary text-muted-foreground hover:border-primary/40 hover:text-foreground transition-colors">
+                            {preset.split(",")[0]}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {isGeneratingVideo && (
+                      <div className="p-6 rounded-xl border border-border bg-card">
+                        <div className="flex items-center gap-3 mb-2">
+                          <Loader2 className="w-5 h-5 text-primary animate-spin" />
+                          <p className="text-foreground font-bold">{videoProgress || "Starting…"}</p>
+                        </div>
+                        <p className="text-muted-foreground text-sm">Keep this page open, or come back later — finished videos are saved under Your videos.</p>
+                      </div>
+                    )}
+
+                    {videoJob?.status === "done" && videoJob.video_url && (
+                      <div className="space-y-3">
+                        <div className="rounded-xl overflow-hidden border border-border bg-black flex justify-center">
+                          <video key={videoJob.video_url} src={videoJob.video_url} controls autoPlay playsInline className="max-h-[70vh] mx-auto" />
+                        </div>
+                        <a href={videoJob.video_url} download="video-ad.mp4" target="_blank" rel="noreferrer" className="text-primary text-sm font-semibold inline-flex items-center gap-1">
+                          <Download className="w-4 h-4" /> Download MP4
+                        </a>
+                      </div>
+                    )}
+
+                    {!isGeneratingVideo && (videoInfo?.unlimited || (videoInfo?.balance ?? 0) > 0) && (
+                      <Button onClick={generateVideoAd} className="accent-gradient hover:opacity-90 text-white font-bold px-8 py-3 rounded-xl">
+                        {videoJob?.status === "done" ? <RefreshCw className="w-4 h-4 mr-2" /> : <Film className="w-4 h-4 mr-2" />}
+                        {videoJob?.status === "done" ? "Make Another Version (1 credit)" : `Generate Video Ad${videoInfo?.unlimited ? "" : " (1 credit)"}`}
+                      </Button>
+                    )}
+
+                    {(videoInfo?.recent || []).filter((v) => v.status === "done" && v.video_url).length > 0 && (
+                      <div>
+                        <p className="text-foreground font-bold text-sm mb-2">Your videos</p>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                          {videoInfo.recent.filter((v) => v.status === "done" && v.video_url).map((v) => (
+                            <button key={v.id} onClick={() => setVideoJob(v)} className="rounded-xl border border-border bg-card p-2 text-left hover:border-primary/40">
+                              <video src={v.video_url} muted playsInline preload="metadata" className="w-full aspect-[9/16] object-cover rounded-lg bg-black" />
+                              <p className="text-sm text-muted-foreground mt-2 line-clamp-2">{v.title || "Video ad"}</p>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {videoInfo && !videoInfo.unlimited && videoInfo.balance > 0 && (
+                      <p className="text-sm text-muted-foreground">
+                        Need more? {(videoInfo.packs || []).map((pack, i) => (
+                          <button key={pack.key} onClick={() => buyPack(pack.key)} disabled={Boolean(buyingPack)} className="text-primary font-semibold underline mx-1">
+                            {pack.credits} for {pack.price}{i < videoInfo.packs.length - 1 ? "," : ""}
+                          </button>
+                        ))}
+                      </p>
+                    )}
+                  </>
                 )}
               </div>
             )}

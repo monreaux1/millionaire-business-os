@@ -14,6 +14,8 @@ export const ENTITY_TABLES = {
   FunnelLead: "funnel_lead",
   GhlConnection: "ghl_connection",
   Subscription: "subscription",
+  VideoCredit: "video_credit",
+  VideoJob: "video_job",
 };
 
 const BUILTIN = ["id", "created_by", "created_by_id", "created_date", "updated_date"];

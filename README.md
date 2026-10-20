@@ -48,6 +48,24 @@ Plan names, prices and descriptions shown in the app are in `api/_lib/billing.js
 Invite-only access: Supabase → Authentication → Sign In / Providers → turn off "Allow new users to sign up",
 set `VITE_ALLOW_SIGNUP=false`, and invite buyers from Supabase → Authentication → Users → Invite.
 
+## AI video ads (fal.ai)
+
+The Ad Engine's **Video Ad** tab turns the ad script into one vertical 15-second ad with voice
+(Hook → Problem → Solution → CTA) using fal.ai (default model: Kling 3.0 Standard, about $0.14/second).
+Customers buy **video credit packs** as one-time Stripe payments: 1 credit = 1 video ad, failed videos are
+refunded automatically, admins make videos free. Finished videos are copied to Supabase storage.
+
+1. Supabase → SQL Editor → run `supabase/migrations/003_video.sql`.
+2. Add `FAL_KEY` in Vercel (fal.ai → Dashboard → Keys), then redeploy. Optional: `VIDEO_MODEL`.
+3. No new Stripe setup: packs use the same keys and webhook as plans. Edit pack sizes and prices in
+   `api/_lib/video.js` (`CREDIT_PACKS`).
+
+## Brand Board
+
+Each business has a Brand Board (logo, colors, fonts, voice, contact links). Generated funnels always use
+its exact colors, fonts and logo, freebies use it in the Asset Creator, and every AI copy request is written
+in its voice.
+
 ## Local development
 
 ```

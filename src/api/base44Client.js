@@ -86,8 +86,8 @@ const integrations = {
   Core: {
     // Same contract as Base44: returns the parsed JSON object when a schema is
     // given, otherwise the text answer.
-    async InvokeLLM({ prompt, response_json_schema, system } = {}) {
-      const result = await callApi("/api/llm", { prompt, response_json_schema, system });
+    async InvokeLLM({ prompt, response_json_schema, system, business_id, use_brand } = {}) {
+      const result = await callApi("/api/llm", { prompt, response_json_schema, system, business_id, use_brand });
       return result.result;
     },
     async SendEmail({ subject, body, to } = {}) {

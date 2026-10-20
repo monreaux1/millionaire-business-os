@@ -2,8 +2,7 @@ import React, { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard, Lightbulb, Layers, Gift, Map, Rocket,
-  FileText, Mic2, Send, ChevronLeft, ChevronRight, Bot, Zap, Video, Brain, LogOut, TrendingUp, GitBranch, Settings, Calendar, Mail, CircleDollarSign, Users, CreditCard, BadgeCheck
-} from "lucide-react";
+  FileText, Mic2, Send, ChevronLeft, ChevronRight, Bot, Zap, Video, Brain, LogOut, TrendingUp, GitBranch, Settings, Calendar, Mail, CircleDollarSign, Users, CreditCard, BadgeCheck, Palette } from "lucide-react";
 import BottomTabBar from "./BottomTabBar";
 import PageTransition from "./PageTransition";
 import ThemeToggle from "./ThemeToggle";
@@ -13,6 +12,7 @@ const NAV = [
   { label: "Dashboard",         path: "/",                    icon: LayoutDashboard },
   { label: "Build My Money Model", path: "/MoneyModelBuilder", icon: CircleDollarSign },
   { label: "Business Foundation", path: "/BusinessFoundation", icon: Settings },
+  { label: "Brand Board",         path: "/BrandProfile",       icon: Palette },
   { label: "Lead Dashboard",      path: "/Leads",              icon: Users },
   { label: "Payments & Delivery", path: "/PaymentFulfillment",  icon: CreditCard },
   { label: "Strategy Generator",path: "/StrategyGenerator",    icon: Brain },

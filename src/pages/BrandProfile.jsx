@@ -75,14 +75,14 @@ export default function BrandProfile() {
       <div className="p-6 md:p-10 max-w-5xl mx-auto min-h-screen hero-radial">
         <div className="mb-8">
           <div className="inline-flex items-center gap-2 text-primary text-sm font-bold uppercase tracking-wider mb-3"><Palette className="w-4 h-4" /> Reusable Brand Kit</div>
-          <h1 className="font-display text-3xl font-black text-foreground mb-2">Brand Profile</h1>
-          <p className="text-muted-foreground">Upload your branding once. Your asset creators can reuse it without asking the same questions again.</p>
+          <h1 className="font-display text-3xl font-black text-foreground mb-2">Brand Board</h1>
+          <p className="text-muted-foreground">Set your logo, colors, fonts and voice once. Every funnel, freebie and piece of copy the app creates uses it automatically.</p>
         </div>
 
         {!businesses.length ? (
           <div className="p-8 rounded-2xl border border-border bg-card text-center">
             <h2 className="font-bold text-xl mb-2">Create your Business Profile first</h2>
-            <p className="text-muted-foreground mb-5">Every Brand Profile belongs to one business so multiple businesses stay separate.</p>
+            <p className="text-muted-foreground mb-5">Each business gets its own Brand Board, so multiple brands stay separate.</p>
             <Link to="/BusinessSetup"><Button className="accent-gradient text-white">Create Business Profile</Button></Link>
           </div>
         ) : (
@@ -99,6 +99,30 @@ export default function BrandProfile() {
               </Select>
               <div className="mt-4 h-2 rounded-full bg-secondary overflow-hidden"><div className="h-full bg-primary transition-all" style={{ width: score + "%" }} /></div>
               <p className="text-sm text-muted-foreground mt-2">{score}% brand-ready. You can save a draft and finish later.</p>
+            </div>
+
+            <div className="rounded-2xl border border-border overflow-hidden" style={{ background: form.background_color || "#ffffff" }}>
+              <div className="flex flex-wrap items-center gap-4 p-5 border-b border-black/10">
+                {form.logo_url
+                  ? <img src={form.logo_url} alt={form.brand_name || "Logo"} className="h-14 w-auto max-w-[180px] object-contain" />
+                  : <span className="h-14 w-14 rounded-xl grid place-items-center text-white text-xl font-black" style={{ background: form.primary_color }}>{(form.brand_name || "B").slice(0, 1).toUpperCase()}</span>}
+                <div className="min-w-0">
+                  <p className="text-xl font-black truncate" style={{ color: form.text_color || "#111", fontFamily: form.heading_font || undefined }}>{form.brand_name || "Your brand name"}</p>
+                  <p className="text-sm" style={{ color: form.text_color || "#111", opacity: 0.6, fontFamily: form.body_font || undefined }}>{form.tone || form.visual_style || "Your brand at a glance"}</p>
+                </div>
+              </div>
+              <div className="grid grid-cols-5">
+                {["primary_color", "secondary_color", "accent_color", "background_color", "text_color"].map((field) => (
+                  <div key={field} className="h-16 flex items-end p-2" style={{ background: form[field] }}>
+                    <span className="text-[11px] font-mono font-bold px-1.5 py-0.5 rounded bg-white/85 text-black">{form[field]}</span>
+                  </div>
+                ))}
+              </div>
+              <div className="p-5 flex flex-wrap items-center gap-4">
+                <span className="text-2xl font-black" style={{ color: form.secondary_color, fontFamily: form.heading_font || undefined }}>Aa {form.heading_font || "Heading font"}</span>
+                <span className="text-sm" style={{ color: form.text_color || "#111", fontFamily: form.body_font || undefined }}>Body text in {form.body_font || "your body font"}</span>
+                <span className="ml-auto rounded-xl px-4 py-2 text-white text-sm font-bold" style={{ background: form.primary_color }}>Button</span>
+              </div>
             </div>
 
             <div className="flex gap-2 overflow-x-auto">
@@ -140,7 +164,7 @@ export default function BrandProfile() {
 
               <div className="pt-4 border-t border-border flex flex-wrap justify-between gap-3">
                 <Button variant="outline" onClick={persist} disabled={saving || !form.brand_name.trim()}>{saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}Save & Finish Later</Button>
-                {step < 2 ? <Button onClick={() => setStep(step + 1)} className="accent-gradient text-white">Continue <ArrowRight className="w-4 h-4 ml-2" /></Button> : <Button onClick={persist} disabled={saving || !form.brand_name.trim()} className="accent-gradient text-white">{saved ? <CheckCircle2 className="w-4 h-4 mr-2" /> : null}{saved ? "Brand Profile Saved" : "Save Brand Profile"}</Button>}
+                {step < 2 ? <Button onClick={() => setStep(step + 1)} className="accent-gradient text-white">Continue <ArrowRight className="w-4 h-4 ml-2" /></Button> : <Button onClick={persist} disabled={saving || !form.brand_name.trim()} className="accent-gradient text-white">{saved ? <CheckCircle2 className="w-4 h-4 mr-2" /> : null}{saved ? "Brand Board Saved" : "Save Brand Board"}</Button>}
               </div>
             </div>
 
