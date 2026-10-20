@@ -8,7 +8,7 @@ import { postHandler, requireUser, adminDb, HttpError } from "../_lib/server.js"
 import { getStripe, appOrigin, requireActiveSubscription, isAdminUser, billingEnabled } from "../_lib/billing.js";
 import {
   videoEnabled, publicPacks, packFor, creditBalance, addCredits, grantPurchase,
-  requireCredit, submitVideo, checkVideo, keepVideo, ensureWelcomeCredit, ownUploadUrl,
+  requireCredit, submitVideo, checkVideo, keepVideo, ensureWelcomeCredit, ownUploadUrl, videoProvider,
 } from "../_lib/video.js";
 
 export const config = { maxDuration: 120 };
@@ -90,28 +90,43 @@ async function start(user, body) {
   await ensureWelcomeCredit(user);
   const { free } = await requireCredit(user);
 
-  // Optional reference photo: the member themself or their product. They must
-  // confirm they own it / have permission, since it becomes the video's first frame.
-  const imageUrl = ownUploadUrl(user, body.image_url);
-  const photoKind = body.photo_kind === "product" ? "product" : "person";
-  if (imageUrl && body.photo_consent !== true) {
+  // Optional reference photos: the member, their product, or both. They must
+  // confirm they own them / have permission before the photos are used.
+  const legacyKind = body.photo_kind === "product" ? "product" : "person";
+  const personPhoto = ownUploadUrl(user, body.person_photo || (legacyKind === "person" ? body.image_url : ""));
+  const productPhoto = ownUploadUrl(user, body.product_photo || (legacyKind === "product" ? body.image_url : ""));
+  if ((personPhoto || productPhoto) && body.photo_consent !== true) {
     throw new HttpError(400, "Confirm the photo is you or your product (or that you have permission) to use it.");
   }
+  const both = Boolean(personPhoto && productPhoto);
+  // kie can lock both the person and the product as named "elements" referenced
+  // in every shot; otherwise one photo is used as the opening frame.
+  const useElements = both && videoProvider() === "kie";
+  const elements = useElements
+    ? [
+        { name: "presenter", description: "the person presenting the ad", element_input_urls: [personPhoto, personPhoto] },
+        { name: "product", description: "the product being advertised", element_input_urls: [productPhoto, productPhoto] },
+      ]
+    : [];
+  const imageUrl = useElements ? "" : personPhoto || productPhoto;
+  const who = useElements ? "@presenter, holding and showing @product," : "The person";
 
   // Shots carry the spoken line; the shared look ("style") is added to each.
   // The line goes first so it survives per-shot length limits.
   // "Talking head" is ad jargon that video models take literally (they draw an
   // extra head), so it is rewritten, and every shot gets the same guardrails.
-  const photoLine = !imageUrl ? ""
-    : photoKind === "product"
-      ? " Feature the exact product shown in the reference photo; keep its look, colors and packaging unchanged."
-      : " The person must look exactly like the person in the reference photo: same face, hair, skin tone and clothing.";
-  const style = clip(`${String(body.style || "").replace(/talking[\s-]*heads?/gi, "one person speaking directly to the camera, framed from the chest up")} Exactly one person in frame, realistic human anatomy, no reflections of the person, ${photoKind === "product" && imageUrl ? "no on-screen text overlays" : "not holding any cards, papers or signs, no written words anywhere in the scene"}.${photoLine}`, 1000);
+  const photoLine = [
+    personPhoto && !useElements ? " The person must look exactly like the person in the reference photo: same face, hair, skin tone and clothing." : "",
+    productPhoto && !useElements ? " Feature the exact product shown in the reference photo; keep its look, colors and packaging unchanged." : "",
+    useElements ? " Keep the presenter's face and the product's look and packaging exactly as in their photos." : "",
+  ].join("");
+  const textRule = productPhoto ? "no on-screen text overlays" : "not holding any cards, papers or signs, no written words anywhere in the scene";
+  const style = clip(`${String(body.style || "").replace(/talking[\s-]*heads?/gi, "one person speaking directly to the camera, framed from the chest up")} Exactly one person in frame, realistic human anatomy, no reflections of the person, ${textRule}.${photoLine}`, 1000);
   const shots = (Array.isArray(body.shots) ? body.shots : [])
     .slice(0, 6)
     .map((s) => ({
       prompt: s.line
-        ? clip(`The person says to camera: "${clip(s.line, 300)}". ${style}`, 1500)
+        ? clip(`${who} says to camera: "${clip(s.line, 300)}". ${style}`, 1500)
         : clip(String(s.prompt || "").replace(/talking[\s-]*heads?/gi, "one person speaking to the camera"), 1500),
       duration: Math.min(15, Math.max(1, Math.round(Number(s.duration) || 3))),
     }))
@@ -128,7 +143,7 @@ async function start(user, body) {
   const prompt = clip(body.prompt, 2500);
   if (!fitted.length && !prompt) throw new HttpError(400, "Write the ad script first.");
 
-  const submitted = await submitVideo({ shots: fitted, prompt, duration: 15, imageUrl });
+  const submitted = await submitVideo({ shots: fitted, prompt, duration: 15, imageUrl, elements });
   const owner = { id: user.id, email: user.email };
   const job = await adminDb().VideoJob.create({
     status: "queued",
@@ -139,7 +154,7 @@ async function start(user, body) {
     status_url: submitted.status_url || "",
     response_url: submitted.response_url || "",
     seconds: total || 15,
-    reference_photo: imageUrl ? photoKind : "",
+    reference_photo: [personPhoto && "person", productPhoto && "product"].filter(Boolean).join("+"),
     charged: !free,
   }, { as: owner });
   if (!free) await addCredits(user.id, -1, { reason: "video", job_id: job.id });

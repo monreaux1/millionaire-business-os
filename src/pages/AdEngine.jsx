@@ -50,10 +50,9 @@ export default function AdEngine() {
   const [videoError, setVideoError] = useState("");
   const [videoNotice, setVideoNotice] = useState("");
   const [buyingPack, setBuyingPack] = useState("");
-  const [refPhoto, setRefPhoto] = useState("");
-  const [photoKind, setPhotoKind] = useState("person");
+  const [photos, setPhotos] = useState({ person: "", product: "" });
   const [photoConsent, setPhotoConsent] = useState(false);
-  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [uploadingPhoto, setUploadingPhoto] = useState("");
   const [characterDesc, setCharacterDesc] = useState("");
 
   const loadLaunchData = () => {
@@ -71,23 +70,24 @@ export default function AdEngine() {
     } catch { /* video is optional */ }
   };
 
-  const uploadRefPhoto = async (event) => {
+  const uploadRefPhoto = async (kind, event) => {
     const file = event.target.files?.[0];
     event.target.value = "";
     if (!file) return;
     if (!/^image\/(jpeg|png|webp)$/.test(file.type)) { setVideoError("Use a JPG, PNG or WEBP photo."); return; }
     if (file.size > 10 * 1024 * 1024) { setVideoError("That photo is over 10 MB. Use a smaller one."); return; }
-    setUploadingPhoto(true);
+    setUploadingPhoto(kind);
     setVideoError("");
     try {
       const { file_url } = await base44.integrations.Core.UploadFile({ file });
-      setRefPhoto(file_url);
+      setPhotos((current) => ({ ...current, [kind]: file_url }));
       setPhotoConsent(false);
     } catch (e) {
       setVideoError(e?.message || "Couldn't upload the photo. Please try again.");
     }
-    setUploadingPhoto(false);
+    setUploadingPhoto("");
   };
+
 
   useEffect(() => {
     (async () => {
@@ -240,7 +240,7 @@ Give a JSON response with:
     const vd = ads.visual_direction || {};
     const script = ads.script || {};
     const modeLabel = MODES.find(m => m.id === mode)?.label?.replace(/^\S+\s/, "") || "UGC Style";
-    const person = refPhoto && photoKind === "person"
+    const person = photos.person
       ? "The same person from the reference photo in every shot."
       : characterDesc
       ? `The same person in every shot: ${characterDesc}.`
@@ -254,13 +254,13 @@ Give a JSON response with:
     ].filter((s) => s.line).map((s) => ({ duration: s.duration, line: String(s.line).slice(0, 300) }));
     try {
       setVideoProgress("Starting your video…");
-      if (refPhoto && !photoConsent) {
+      if ((photos.person || photos.product) && !photoConsent) {
         setVideoError("Tick the box confirming the photo is you or your product before generating.");
         setIsGeneratingVideo(false);
         setVideoProgress("");
         return;
       }
-      const { job } = await startVideo({ shots, style, image_url: refPhoto || undefined, photo_kind: photoKind, photo_consent: photoConsent, title: (ads.hooks?.[0] || script.hook || "Video ad").slice(0, 120) });
+      const { job } = await startVideo({ shots, style, person_photo: photos.person || undefined, product_photo: photos.product || undefined, photo_consent: photoConsent, title: (ads.hooks?.[0] || script.hook || "Video ad").slice(0, 120) });
       setVideoJob(job);
       loadVideoCredits();
       const { job: finished, refunded, timedOut } = await waitForVideo(job.id, (update) => {
@@ -532,32 +532,32 @@ Give a JSON response with:
                     )}
 
                     <div className="p-5 rounded-xl border border-border bg-card">
-                      <p className="text-foreground font-bold text-sm mb-1">📸 Reference photo <span className="font-normal text-muted-foreground">(optional)</span></p>
-                      <p className="text-muted-foreground text-sm mb-3">Use a photo of yourself to star in your ad, or a photo of your product to feature it. It becomes the opening shot.</p>
-                      <div className="flex flex-wrap gap-2 mb-3">
-                        {[["person", "🙋 It's me"], ["product", "📦 My product"]].map(([key, label]) => (
-                          <button key={key} type="button" onClick={() => setPhotoKind(key)}
-                            className={`text-sm px-3 py-1.5 rounded-lg border ${photoKind === key ? "border-primary bg-primary/10 text-primary font-semibold" : "border-border bg-secondary text-muted-foreground"}`}>
-                            {label}
-                          </button>
+                      <p className="text-foreground font-bold text-sm mb-1">📸 Star in your ad <span className="font-normal text-muted-foreground">(optional)</span></p>
+                      <p className="text-muted-foreground text-sm mb-3">Add a photo of yourself, your product, or both, and the ad shows you presenting your product.</p>
+                      <div className="grid grid-cols-2 gap-3">
+                        {[["person", "🙋 You", "Clear, well-lit, facing the camera"], ["product", "📦 Your product", "Plain background works best"]].map(([kind, label, tip]) => (
+                          <div key={kind} className="rounded-xl border border-border p-3">
+                            <p className="text-sm font-semibold text-foreground mb-2">{label}</p>
+                            {photos[kind] ? (
+                              <div className="space-y-2">
+                                <img src={photos[kind]} alt={label} className="w-full h-32 object-cover rounded-lg border border-border" />
+                                <button type="button" onClick={() => { setPhotos((c) => ({ ...c, [kind]: "" })); setPhotoConsent(false); }} className="text-sm text-muted-foreground underline">Remove</button>
+                              </div>
+                            ) : (
+                              <label className="flex flex-col items-center justify-center gap-1 h-32 cursor-pointer border border-dashed border-border rounded-lg text-sm text-muted-foreground hover:border-primary/50 text-center px-2">
+                                {uploadingPhoto === kind ? <Loader2 className="w-5 h-5 animate-spin" /> : <Download className="w-5 h-5 rotate-180" />}
+                                <span>{uploadingPhoto === kind ? "Uploading…" : "Upload photo"}</span>
+                                <span className="text-xs">{tip}</span>
+                                <input type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={(e) => uploadRefPhoto(kind, e)} disabled={Boolean(uploadingPhoto)} />
+                              </label>
+                            )}
+                          </div>
                         ))}
                       </div>
-                      {refPhoto ? (
-                        <div className="flex items-start gap-3">
-                          <img src={refPhoto} alt="Reference" className="w-20 h-28 object-cover rounded-lg border border-border" />
-                          <div className="flex-1 space-y-2">
-                            <label className="flex items-start gap-2 text-sm text-foreground">
-                              <input type="checkbox" checked={photoConsent} onChange={(e) => setPhotoConsent(e.target.checked)} className="mt-1" />
-                              <span>{photoKind === "product" ? "This is my product and I have the rights to use this photo." : "This photo is of me, or I have the person's permission to use their likeness in an ad."}</span>
-                            </label>
-                            <button type="button" onClick={() => { setRefPhoto(""); setPhotoConsent(false); }} className="text-sm text-muted-foreground underline">Remove photo</button>
-                          </div>
-                        </div>
-                      ) : (
-                        <label className="flex items-center justify-center gap-2 cursor-pointer border border-dashed border-border rounded-xl px-3 py-3 text-sm text-muted-foreground hover:border-primary/50">
-                          {uploadingPhoto ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4 rotate-180" />}
-                          {uploadingPhoto ? "Uploading…" : "Upload a photo (JPG, PNG or WEBP, clear and well-lit, facing the camera)"}
-                          <input type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={uploadRefPhoto} disabled={uploadingPhoto} />
+                      {(photos.person || photos.product) && (
+                        <label className="flex items-start gap-2 text-sm text-foreground mt-3">
+                          <input type="checkbox" checked={photoConsent} onChange={(e) => setPhotoConsent(e.target.checked)} className="mt-1" />
+                          <span>I confirm {photos.person ? "the person photo is me (or I have their permission to use their likeness in an ad)" : ""}{photos.person && photos.product ? " and " : ""}{photos.product ? "I have the rights to use the product photo" : ""}.</span>
                         </label>
                       )}
                     </div>
