@@ -90,7 +90,7 @@ async function start(user, body) {
   // The line goes first so it survives per-shot length limits.
   // "Talking head" is ad jargon that video models take literally (they draw an
   // extra head), so it is rewritten, and every shot gets the same guardrails.
-  const style = clip(`${String(body.style || "").replace(/talking[\s-]*heads?/gi, "one person speaking directly to the camera, framed from the chest up")} Exactly one person in frame, realistic human anatomy, no reflections of the person, no on-screen text.`, 900);
+  const style = clip(`${String(body.style || "").replace(/talking[\s-]*heads?/gi, "one person speaking directly to the camera, framed from the chest up")} Exactly one person in frame, realistic human anatomy, no reflections of the person, not holding any cards, papers or signs, no written words anywhere in the scene.`, 900);
   const shots = (Array.isArray(body.shots) ? body.shots : [])
     .slice(0, 6)
     .map((s) => ({
