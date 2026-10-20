@@ -49,6 +49,7 @@ const PublicFunnel = lazy(() => import('./pages/PublicFunnel'));
 const PaymentFulfillment = lazy(() => import('./pages/PaymentFulfillment'));
 const Login = lazy(() => import('./pages/Login'));
 const Billing = lazy(() => import('./pages/Billing'));
+const Landing = lazy(() => import('./pages/Landing'));
 
 const PageLoader = () => (
   <div className="fixed inset-0 flex items-center justify-center bg-background">
@@ -155,12 +156,19 @@ const AuthenticatedApp = () => {
     );
   }
 
+  // Logged-out visitors to the home page see the landing page instead of the login screen.
+  const showLanding = window.location.pathname === "/";
   if (authError) {
     if (authError.type === 'user_not_registered') return <UserNotRegisteredError />;
-    if (authError.type === 'auth_required') { navigateToLogin(); return null; }
+    if (authError.type === 'auth_required') {
+      if (showLanding) return <Suspense fallback={<PageLoader />}><Landing /></Suspense>;
+      navigateToLogin();
+      return null;
+    }
   }
 
   if (!user) {
+    if (showLanding) return <Suspense fallback={<PageLoader />}><Landing /></Suspense>;
     navigateToLogin();
     return null;
   }
@@ -219,11 +227,16 @@ const AppRouter = () => {
   const location = useLocation();
 
   if (location.pathname === "/login" || location.pathname === "/reset-password") {
+    const wantsSignup = new URLSearchParams(location.search).get("mode") === "signup";
     return (
       <Suspense fallback={<PageLoader />}>
-        <Login initialMode={location.pathname === "/reset-password" ? "reset" : "signin"} />
+        <Login initialMode={location.pathname === "/reset-password" ? "reset" : wantsSignup ? "signup" : "signin"} />
       </Suspense>
     );
+  }
+
+  if (location.pathname === "/welcome") {
+    return <Suspense fallback={<PageLoader />}><Landing /></Suspense>;
   }
 
   if (location.pathname.startsWith("/f/")) {
