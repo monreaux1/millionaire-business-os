@@ -4,6 +4,53 @@ import "./landing.css";
 // Cinematic header video. Set VITE_HERO_VIDEO_URL in Vercel to swap it.
 const HERO_VIDEO = import.meta.env.VITE_HERO_VIDEO_URL || "";
 const SIGNUP_URL = "/login?mode=signup";
+// Brand logo (orange mark + black lettering on transparent). Set VITE_LOGO_URL to swap it.
+const LOGO_URL = import.meta.env.VITE_LOGO_URL || "https://media.base44.com/images/public/68b3ceea8626205b99d31641/8da510d05_mblogo.png";
+
+// The logo's lettering is black, which disappears on this dark page, so dark
+// pixels are redrawn in the page's light color; the orange mark stays as is.
+function useLightLogo(src) {
+  const [url, setUrl] = useState("");
+  useEffect(() => {
+    let cancelled = false;
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => {
+      try {
+        const width = Math.min(img.naturalWidth, 1200);
+        const height = Math.round((img.naturalHeight * width) / img.naturalWidth);
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0, width, height);
+        const data = ctx.getImageData(0, 0, width, height);
+        const px = data.data;
+        for (let i = 0; i < px.length; i += 4) {
+          const [r, g, b] = [px[i], px[i + 1], px[i + 2]];
+          const max = Math.max(r, g, b);
+          const saturation = max ? (max - Math.min(r, g, b)) / max : 0;
+          if (px[i + 3] > 0 && max < 110 && saturation < 0.35) {
+            px[i] = 244; px[i + 1] = 240; px[i + 2] = 255;
+          }
+        }
+        ctx.putImageData(data, 0, 0);
+        if (!cancelled) setUrl(canvas.toDataURL("image/png"));
+      } catch {
+        /* cross-origin blocked: keep the text wordmark */
+      }
+    };
+    img.src = src;
+    return () => { cancelled = true; };
+  }, [src]);
+  return url;
+}
+
+function Logo({ className = "" }) {
+  const url = useLightLogo(LOGO_URL);
+  if (!url) return <span className={`lp-wordmark ${className}`}>Millionaire Business <b>OS</b></span>;
+  return <img className={`lp-logo ${className}`} src={url} alt="Millionaire Business OS" />;
+}
 
 // The eleven tabs people juggle, and what each one becomes inside the app.
 const TABS = [
@@ -134,7 +181,7 @@ function Hero({ spots }) {
       )}
       <div className="lp-hero-glow" aria-hidden="true" />
       <nav className="lp-nav">
-        <span className="lp-wordmark">Millionaire Business <b>OS</b></span>
+        <a href="/welcome" aria-label="Millionaire Business OS home"><Logo /></a>
         <a className="lp-nav-link" href="/login">Sign in</a>
       </nav>
       <div className="lp-hero-copy">
@@ -468,6 +515,7 @@ export default function Landing() {
         <a className="lp-btn lp-btn-primary lp-btn-lg" href={SIGNUP_URL}>Claim my founding spot</a>
       </section>
       <footer className="lp-footer">
+        <Logo className="lp-logo-sm" />
         <span>© {new Date().getFullYear()} AI Wealth Systems</span>
         <a href="/login">Sign in</a>
       </footer>
