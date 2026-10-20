@@ -88,11 +88,15 @@ async function start(user, body) {
 
   // Shots carry the spoken line; the shared look ("style") is added to each.
   // The line goes first so it survives per-shot length limits.
-  const style = clip(body.style, 900);
+  // "Talking head" is ad jargon that video models take literally (they draw an
+  // extra head), so it is rewritten, and every shot gets the same guardrails.
+  const style = clip(`${String(body.style || "").replace(/talking[\s-]*heads?/gi, "one person speaking directly to the camera, framed from the chest up")} Exactly one person in frame, realistic human anatomy, no reflections of the person, no on-screen text.`, 900);
   const shots = (Array.isArray(body.shots) ? body.shots : [])
     .slice(0, 6)
     .map((s) => ({
-      prompt: s.line ? clip(`The person says to camera: "${clip(s.line, 300)}". ${style}`, 1500) : clip(s.prompt, 1500),
+      prompt: s.line
+        ? clip(`The person says to camera: "${clip(s.line, 300)}". ${style}`, 1500)
+        : clip(String(s.prompt || "").replace(/talking[\s-]*heads?/gi, "one person speaking to the camera"), 1500),
       duration: Math.min(15, Math.max(1, Math.round(Number(s.duration) || 3))),
     }))
     .filter((s) => s.prompt);

@@ -217,7 +217,7 @@ Give a JSON response with:
     const person = characterDesc
       ? `The same person in every shot: ${characterDesc}.`
       : `A relatable person wearing ${vd.wardrobe || "everyday casual clothing"}.`;
-    const style = `Vertical 9:16 ${modeLabel} video ad for ${launchData?.intake?.what || "a coaching/service business"}. ${vd.style || "Talking head"}, filmed in ${vd.setting || "a casual real-world setting"}. ${person} Handheld smartphone look, natural lighting, authentic, speaking to camera in English.`;
+    const style = `Vertical 9:16 ${modeLabel} video ad for ${launchData?.intake?.what || "a coaching/service business"}. ${vd.style || "One person speaking to the camera"}, filmed in ${vd.setting || "a casual real-world setting"}. ${person} Handheld smartphone look, natural lighting, authentic, speaking to camera in English.`;
     const shots = [
       { line: script.hook, duration: 3 },
       { line: script.problem, duration: 4 },

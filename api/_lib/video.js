@@ -151,7 +151,7 @@ async function kieFetch(url, init = {}) {
 
 async function submitKie({ shots, prompt, duration = 15, aspectRatio = "9:16" }) {
   const model = videoModel("kie");
-  const input = { aspect_ratio: aspectRatio, sound: true, mode: "std" };
+  const input = { aspect_ratio: aspectRatio, sound: true, mode: ["std", "pro"].includes(process.env.VIDEO_MODE) ? process.env.VIDEO_MODE : "std" };
   if (Array.isArray(shots) && shots.length) {
     // kie limits: 1–12 seconds and 500 characters per shot.
     input.multi_shots = true;
