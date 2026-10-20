@@ -182,9 +182,10 @@ async function kieFetch(url, init = {}) {
   return data.data || {};
 }
 
-async function submitKie({ shots, prompt, duration = 15, aspectRatio = "9:16", imageUrl = "", elements = [] }) {
+async function submitKie({ shots, prompt, duration = 15, aspectRatio = "9:16", imageUrl = "", elements = [], quality = "", sound = true }) {
   const model = videoModel("kie");
-  const input = { aspect_ratio: aspectRatio, sound: true, mode: ["std", "pro"].includes(process.env.VIDEO_MODE) ? process.env.VIDEO_MODE : "std" };
+  const mode = ["std", "pro"].includes(quality) ? quality : ["std", "pro"].includes(process.env.VIDEO_MODE) ? process.env.VIDEO_MODE : "std";
+  const input = { aspect_ratio: aspectRatio, sound: Boolean(sound), mode };
   // The reference photo becomes the opening frame (kie: image_urls[0]).
   if (imageUrl) input.image_urls = [imageUrl];
   // Named elements (person + product) referenced as @name inside the prompts.

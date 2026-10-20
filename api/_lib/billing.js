@@ -19,7 +19,7 @@ export const PLANS = [
 export const env = (name) => String(process.env[name] || "").replace(/\s+/g, "");
 
 const ACTIVE_STATUSES = ["active", "trialing", "past_due"];
-const foundingLimit = () => Number(process.env.FOUNDING_LIMIT || 50);
+export const foundingLimit = () => Number(process.env.FOUNDING_LIMIT || 50);
 
 export const billingEnabled = () => Boolean(env("STRIPE_SECRET_KEY"));
 

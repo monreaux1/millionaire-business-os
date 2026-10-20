@@ -143,7 +143,10 @@ async function start(user, body) {
   const prompt = clip(body.prompt, 2500);
   if (!fitted.length && !prompt) throw new HttpError(400, "Write the ad script first.");
 
-  const submitted = await submitVideo({ shots: fitted, prompt, duration: 15, imageUrl, elements });
+  // Admins can make landscape/square videos (e.g. website headers); members get vertical ads.
+  const aspectRatio = isAdminUser(user) && ["16:9", "1:1"].includes(body.aspect_ratio) ? body.aspect_ratio : "9:16";
+  const adminExtras = isAdminUser(user) ? { quality: body.quality === "pro" ? "pro" : "", sound: body.sound !== false } : {};
+  const submitted = await submitVideo({ shots: fitted, prompt, duration: 15, imageUrl, elements, aspectRatio, ...adminExtras });
   const owner = { id: user.id, email: user.email };
   const job = await adminDb().VideoJob.create({
     status: "queued",
