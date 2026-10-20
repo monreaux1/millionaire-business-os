@@ -2,7 +2,21 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import "./landing.css";
 
 // Cinematic header video. Set VITE_HERO_VIDEO_URL in Vercel to swap it.
-const HERO_VIDEO = import.meta.env.VITE_HERO_VIDEO_URL || "";
+const HERO_VIDEO = import.meta.env.VITE_HERO_VIDEO_URL
+  || "https://wlfwbgqgdxrvfjxxddss.supabase.co/storage/v1/object/public/uploads/219fe8f4-29c9-4d1c-b9f5-7caa2bb683c6/videos/9ea645c6-c352-45ec-bf1f-cf67476e5b69.mp4";
+
+// The header film is large, so phones and data-saver connections get the
+// animated background instead.
+function useHeroVideo() {
+  const [ok, setOk] = useState(false);
+  useEffect(() => {
+    const saveData = navigator.connection?.saveData;
+    const wide = window.matchMedia?.("(min-width: 760px)").matches;
+    const calm = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+    setOk(Boolean(HERO_VIDEO && wide && !saveData && !calm));
+  }, []);
+  return ok;
+}
 const SIGNUP_URL = "/login?mode=signup";
 // Brand logo (orange mark + black lettering on transparent). Set VITE_LOGO_URL to swap it.
 const LOGO_URL = import.meta.env.VITE_LOGO_URL || "https://media.base44.com/images/public/68b3ceea8626205b99d31641/8da510d05_mblogo.png";
@@ -183,9 +197,10 @@ function useFounding() {
 
 function Hero({ spots }) {
   const [videoReady, setVideoReady] = useState(false);
+  const showVideo = useHeroVideo();
   return (
     <header className="lp-hero">
-      {HERO_VIDEO && (
+      {showVideo && (
         <video
           className={`lp-hero-video ${videoReady ? "is-ready" : ""}`}
           src={HERO_VIDEO}
