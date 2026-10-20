@@ -10,6 +10,7 @@ import { createPageUrl } from "@/utils";
 import { Mail, ArrowLeft, Send, CheckCircle, AlertCircle } from "lucide-react";
 import PullToRefresh from "@/components/PullToRefresh";
 import AppLayout from "@/components/AppLayout";
+import { coreOfferOf } from "@/lib/strategy";
 
 export default function EmailBriefing() {
   const navigate = useNavigate();
@@ -90,7 +91,7 @@ ${user.full_name}, your mission today is CLEAR:
 
 📈 BUSINESS: ${business?.business_name}
 🎯 TARGET: ${business?.target_avatar?.slice(0, 100)}...
-💰 CORE OFFER: ${selectedStrategy.offer_stack.core_offer.name}
+💰 CORE OFFER: ${coreOfferOf(selectedStrategy).name || "Main offer"}
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
@@ -100,7 +101,7 @@ ${todaysPlan.hook}
 ⚡ YOUR CALL-TO-ACTION:
 ${todaysPlan.cta}
 
-📱 CONTENT TYPE: ${todaysPlan.content_type.toUpperCase()}
+📱 CONTENT TYPE: ${String(todaysPlan.content_type || "post").toUpperCase()}
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
@@ -195,7 +196,7 @@ Built by Millionaire Business OS
                     const business = getBusinessForStrategy(strategy);
                     return (
                       <SelectItem key={strategy.id} value={strategy.id}>
-                        {business?.business_name} - {strategy.offer_stack.core_offer.name}
+                        {business?.business_name} - {coreOfferOf(strategy).name || "Strategy"}
                       </SelectItem>
                     );
                   })}
@@ -233,7 +234,7 @@ Built by Millionaire Business OS
               
               <div className="flex items-center gap-3">
                 <Badge className="bg-purple-100 text-purple-800">
-                  {todaysPlan.content_type.toUpperCase()}
+                  {String(todaysPlan.content_type || "post").toUpperCase()}
                 </Badge>
                 {user && (
                   <Badge variant="outline" className="text-foreground/80">

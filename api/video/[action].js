@@ -7,7 +7,7 @@
 import { postHandler, requireUser, adminDb, HttpError } from "../_lib/server.js";
 import { getStripe, appOrigin, requireActiveSubscription, isAdminUser, billingEnabled } from "../_lib/billing.js";
 import {
-  videoEnabled, videoModel, publicPacks, packFor, creditBalance, addCredits, grantPurchase,
+  videoEnabled, publicPacks, packFor, creditBalance, addCredits, grantPurchase,
   requireCredit, submitVideo, checkVideo, keepVideo,
 } from "../_lib/video.js";
 
@@ -86,9 +86,15 @@ async function start(user, body) {
   await requireActiveSubscription(user);
   const { free } = await requireCredit(user);
 
+  // Shots carry the spoken line; the shared look ("style") is added to each.
+  // The line goes first so it survives per-shot length limits.
+  const style = clip(body.style, 900);
   const shots = (Array.isArray(body.shots) ? body.shots : [])
     .slice(0, 6)
-    .map((s) => ({ prompt: clip(s.prompt, 1500), duration: Math.min(15, Math.max(1, Math.round(Number(s.duration) || 3))) }))
+    .map((s) => ({
+      prompt: s.line ? clip(`The person says to camera: "${clip(s.line, 300)}". ${style}`, 1500) : clip(s.prompt, 1500),
+      duration: Math.min(15, Math.max(1, Math.round(Number(s.duration) || 3))),
+    }))
     .filter((s) => s.prompt);
   // Total length is capped at 15 seconds.
   let total = 0;
@@ -106,12 +112,12 @@ async function start(user, body) {
   const owner = { id: user.id, email: user.email };
   const job = await adminDb().VideoJob.create({
     status: "queued",
-    provider: "fal",
-    model: videoModel(),
+    provider: submitted.provider,
+    model: submitted.model,
     title: clip(body.title, 120),
     request_id: submitted.request_id,
-    status_url: submitted.status_url,
-    response_url: submitted.response_url,
+    status_url: submitted.status_url || "",
+    response_url: submitted.response_url || "",
     seconds: total || 15,
     charged: !free,
   }, { as: owner });

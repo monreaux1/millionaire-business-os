@@ -64,7 +64,7 @@ EXISTING STRATEGY DATA:
 - Lead Magnet: ${strategy.funnel_map?.lead_magnet || "Not defined"}
 - Nurture Sequence: ${JSON.stringify(strategy.funnel_map?.nurture_sequence || [])}
 - Close Mechanism: ${strategy.funnel_map?.close_mechanism || "Not defined"}
-- Core Offer: ${JSON.stringify(strategy.offer_stack?.core_offer || {})}
+- Core Offer: ${JSON.stringify(strategy.offer_stack?.core_offer || strategy.offer_stack?.mid_ticket || strategy.offer_stack?.low_ticket || {})}
 - Upsells: ${JSON.stringify(strategy.offer_stack?.upsells || [])}
 - Pricing Anchor: $${strategy.pricing_strategy?.anchor_price || 0}
 - Actual Price: $${strategy.pricing_strategy?.actual_price || 0}

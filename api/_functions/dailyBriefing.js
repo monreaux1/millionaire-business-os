@@ -51,7 +51,7 @@ async function findTodaysPlan(base44, user) {
     const plan = strategy.launch_calendar.find((p) => p.day === day);
     if (plan) {
       const business2 = strategy.business_id ? await base44.entities.Business.get(strategy.business_id).catch(() => null) : null;
-      return { plan, business: business2, offerName: strategy.offer_stack?.core_offer?.name };
+      return { plan, business: business2, offerName: (strategy.offer_stack?.core_offer || strategy.offer_stack?.mid_ticket || strategy.offer_stack?.low_ticket)?.name };
     }
   }
   const businesses = await base44.entities.Business.filter({ created_by: user.email }, "-updated_date", 1);

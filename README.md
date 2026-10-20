@@ -48,7 +48,7 @@ Plan names, prices and descriptions shown in the app are in `api/_lib/billing.js
 Invite-only access: Supabase → Authentication → Sign In / Providers → turn off "Allow new users to sign up",
 set `VITE_ALLOW_SIGNUP=false`, and invite buyers from Supabase → Authentication → Users → Invite.
 
-## AI video ads (fal.ai)
+## AI video ads (kie.ai or fal.ai)
 
 The Ad Engine's **Video Ad** tab turns the ad script into one vertical 15-second ad with voice
 (Hook → Problem → Solution → CTA) using fal.ai (default model: Kling 3.0 Standard, about $0.14/second).
@@ -56,7 +56,7 @@ Customers buy **video credit packs** as one-time Stripe payments: 1 credit = 1 v
 refunded automatically, admins make videos free. Finished videos are copied to Supabase storage.
 
 1. Supabase → SQL Editor → run `supabase/migrations/003_video.sql`.
-2. Add `FAL_KEY` in Vercel (fal.ai → Dashboard → Keys), then redeploy. Optional: `VIDEO_MODEL`.
+2. Add `KIE_KEY` (kie.ai) or `FAL_KEY` (fal.ai) in Vercel, then redeploy. kie is used when both are set; override with `VIDEO_PROVIDER`. Optional: `VIDEO_MODEL`.
 3. No new Stripe setup: packs use the same keys and webhook as plans. Edit pack sizes and prices in
    `api/_lib/video.js` (`CREDIT_PACKS`).
 

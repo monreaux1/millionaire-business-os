@@ -223,10 +223,10 @@ Give a JSON response with:
       { line: script.problem, duration: 4 },
       { line: script.solution, duration: 4 },
       { line: script.cta, duration: 4 },
-    ].filter((s) => s.line).map((s) => ({ duration: s.duration, prompt: `${style} The person says: "${String(s.line).slice(0, 300)}"` }));
+    ].filter((s) => s.line).map((s) => ({ duration: s.duration, line: String(s.line).slice(0, 300) }));
     try {
       setVideoProgress("Starting your video…");
-      const { job } = await startVideo({ shots, title: (ads.hooks?.[0] || script.hook || "Video ad").slice(0, 120) });
+      const { job } = await startVideo({ shots, style, title: (ads.hooks?.[0] || script.hook || "Video ad").slice(0, 120) });
       setVideoJob(job);
       loadVideoCredits();
       const { job: finished, refunded, timedOut } = await waitForVideo(job.id, (update) => {

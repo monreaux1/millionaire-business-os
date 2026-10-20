@@ -10,6 +10,7 @@ import { createPageUrl } from "@/utils";
 import PullToRefresh from "@/components/PullToRefresh";
 import AppLayout from "@/components/AppLayout";
 import { Calendar, ArrowLeft, Zap, CheckCircle, AlertCircle } from "lucide-react";
+import { coreOfferOf } from "@/lib/strategy";
 
 export default function LaunchCalendar() {
   const navigate = useNavigate();
@@ -55,13 +56,17 @@ export default function LaunchCalendar() {
     if (!selectedStrategy) return;
 
     const business = getBusinessForStrategy(selectedStrategy);
-    if (!business) return;
+    if (!business) {
+      setError("This strategy's business profile was deleted. Generate a new strategy first.");
+      return;
+    }
 
     setIsGenerating(true);
     setError(null);
     try {
       const timeline = business.timeline || "30-days";
-      const days = parseInt(timeline.split("-")[0]);
+      // Up to 30 daily actions per calendar keeps it fast and readable.
+      const days = Math.min(30, Math.max(7, parseInt(String(timeline).match(/\d+/)?.[0], 10) || 30));
 
       const prompt = `
 You are an elite launch strategist creating a ${days}-day launch calendar. This needs to be focused and results-driven.
@@ -70,8 +75,8 @@ BUSINESS CONTEXT:
 - Name: ${business.business_name}
 - Industry: ${business.industry}
 - Target: ${business.target_avatar}
-- Core Offer: ${selectedStrategy.offer_stack.core_offer.name} at $${selectedStrategy.offer_stack.core_offer.price}
-- Lead Magnet: ${selectedStrategy.funnel_map.lead_magnet}
+- Core Offer: ${coreOfferOf(selectedStrategy).name || "Main offer"}${coreOfferOf(selectedStrategy).price ? ` at $${coreOfferOf(selectedStrategy).price}` : ""}
+- Lead Magnet: ${selectedStrategy.funnel_map?.lead_magnet || "Free lead magnet"}
 
 Create a ${days}-day launch calendar with daily actions. Each day needs:
 1. Hook: Attention-grabbing content angle (specific, controversial, valuable)
@@ -110,7 +115,9 @@ Be specific about the hooks - no generic "tips". Give me actual content angles t
         }
       });
 
-      setLaunchCalendar(result.calendar);
+      const calendar = Array.isArray(result?.calendar) ? result.calendar : [];
+      if (!calendar.length) throw new Error("Empty calendar");
+      setLaunchCalendar(calendar.map((item, index) => ({ ...item, day: Number(item.day) || index + 1 })));
     } catch (error) {
       console.error("Error generating launch calendar:", error);
       setError("The AI failed to generate a launch calendar. Please try again.");
@@ -143,7 +150,7 @@ Be specific about the hooks - no generic "tips". Give me actual content angles t
       'story': 'bg-purple-100 text-purple-800',
       'live': 'bg-yellow-100 text-yellow-800'
     };
-    return colors[type.toLowerCase()] || 'bg-gray-100 text-gray-800';
+    return colors[String(type || "").toLowerCase()] || 'bg-gray-100 text-gray-800';
   };
 
   return (
@@ -208,7 +215,7 @@ Be specific about the hooks - no generic "tips". Give me actual content angles t
                     const business = getBusinessForStrategy(strategy);
                     return (
                       <SelectItem key={strategy.id} value={strategy.id}>
-                        {business?.business_name} - {strategy.offer_stack.core_offer.name}
+                        {business?.business_name} - {coreOfferOf(strategy).name || "Strategy"}
                       </SelectItem>
                     );
                   })}
@@ -260,8 +267,8 @@ Be specific about the hooks - no generic "tips". Give me actual content angles t
             </div>
 
             <div className="grid gap-4">
-              {launchCalendar.map((day) => (
-                <Card key={day.day} className="dark-card border-border hover:border-yellow-400 transition-all duration-200">
+              {launchCalendar.map((day, index) => (
+                <Card key={`${day.day}-${index}`} className="dark-card border-border hover:border-yellow-400 transition-all duration-200">
                   <CardContent className="p-6">
                     <div className="flex items-start gap-4">
                       <div className="w-12 h-12 bg-yellow-400 text-black rounded-full flex items-center justify-center font-black text-lg">
@@ -270,7 +277,7 @@ Be specific about the hooks - no generic "tips". Give me actual content angles t
                       <div className="flex-1">
                         <div className="flex items-center gap-3 mb-3">
                           <Badge className={getContentTypeColor(day.content_type)}>
-                            {day.content_type.toUpperCase()}
+                            {String(day.content_type || "post").toUpperCase()}
                           </Badge>
                         </div>
                         <h3 className="text-foreground font-bold text-lg mb-2">HOOK:</h3>

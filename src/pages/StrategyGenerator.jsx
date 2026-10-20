@@ -203,9 +203,16 @@ Be specific, aggressive, and focus on VALUE DELIVERY. Your response must be stru
     setIsSaving(true);
     setError(null);
     try {
+      const stack = generatedStrategy.offer_stack || {};
       await Strategy.create({
         business_id: selectedBusiness.id,
-        ...generatedStrategy
+        ...generatedStrategy,
+        // Other tools read the main offer as core_offer and the next steps as upsells.
+        offer_stack: {
+          ...stack,
+          core_offer: stack.core_offer || stack.mid_ticket || stack.low_ticket || null,
+          upsells: stack.upsells || [stack.high_ticket].filter(Boolean),
+        },
       });
       navigate(createPageUrl("LaunchCalendar"));
     } catch (error) {
@@ -327,7 +334,7 @@ Be specific, aggressive, and focus on VALUE DELIVERY. Your response must be stru
               </CardHeader>
               <CardContent className="space-y-4">
                 {/* Low Ticket */}
-                {generatedStrategy.offer_stack.low_ticket && (
+                {generatedStrategy.offer_stack?.low_ticket && (
                   <div className="p-5 bg-blue-900 bg-opacity-20 border border-blue-500 rounded-lg">
                     <div className="flex items-center justify-between mb-3">
                       <div className="flex items-center gap-2">
@@ -335,18 +342,18 @@ Be specific, aggressive, and focus on VALUE DELIVERY. Your response must be stru
                         <span className="text-muted-foreground text-sm">Entry Point • Low Friction</span>
                       </div>
                       <Badge className="bg-blue-500 text-primary-foreground font-bold text-lg px-3 py-1">
-                        ${generatedStrategy.offer_stack.low_ticket.price?.toLocaleString()}
+                        ${generatedStrategy.offer_stack?.low_ticket.price?.toLocaleString()}
                       </Badge>
                     </div>
-                    <h4 className="text-foreground font-bold text-lg mb-1">{generatedStrategy.offer_stack.low_ticket.name}</h4>
-                    <p className="text-muted-foreground text-sm mb-2">Value: ${generatedStrategy.offer_stack.low_ticket.value?.toLocaleString()}</p>
-                    <p className="text-foreground/80 text-sm mb-3">{generatedStrategy.offer_stack.low_ticket.whats_included}</p>
-                    <div className="bg-card p-3 rounded"><p className="text-blue-300 text-sm">🛡️ {generatedStrategy.offer_stack.low_ticket.guarantee}</p></div>
+                    <h4 className="text-foreground font-bold text-lg mb-1">{generatedStrategy.offer_stack?.low_ticket.name}</h4>
+                    <p className="text-muted-foreground text-sm mb-2">Value: ${generatedStrategy.offer_stack?.low_ticket.value?.toLocaleString()}</p>
+                    <p className="text-foreground/80 text-sm mb-3">{generatedStrategy.offer_stack?.low_ticket.whats_included}</p>
+                    <div className="bg-card p-3 rounded"><p className="text-blue-300 text-sm">🛡️ {generatedStrategy.offer_stack?.low_ticket.guarantee}</p></div>
                   </div>
                 )}
 
                 {/* Mid Ticket */}
-                {generatedStrategy.offer_stack.mid_ticket && (
+                {generatedStrategy.offer_stack?.mid_ticket && (
                   <div className="p-5 bg-green-900 bg-opacity-20 border border-green-500 rounded-lg">
                     <div className="flex items-center justify-between mb-3">
                       <div className="flex items-center gap-2">
@@ -354,18 +361,18 @@ Be specific, aggressive, and focus on VALUE DELIVERY. Your response must be stru
                         <span className="text-muted-foreground text-sm">Core Transformation • Main Revenue</span>
                       </div>
                       <Badge className="bg-green-500 text-black font-bold text-lg px-3 py-1">
-                        ${generatedStrategy.offer_stack.mid_ticket.price?.toLocaleString()}
+                        ${generatedStrategy.offer_stack?.mid_ticket.price?.toLocaleString()}
                       </Badge>
                     </div>
-                    <h4 className="text-foreground font-bold text-lg mb-1">{generatedStrategy.offer_stack.mid_ticket.name}</h4>
-                    <p className="text-muted-foreground text-sm mb-2">Value: ${generatedStrategy.offer_stack.mid_ticket.value?.toLocaleString()}</p>
-                    <p className="text-foreground/80 text-sm mb-3">{generatedStrategy.offer_stack.mid_ticket.whats_included}</p>
-                    <div className="bg-card p-3 rounded"><p className="text-green-300 text-sm">🛡️ {generatedStrategy.offer_stack.mid_ticket.guarantee}</p></div>
+                    <h4 className="text-foreground font-bold text-lg mb-1">{generatedStrategy.offer_stack?.mid_ticket.name}</h4>
+                    <p className="text-muted-foreground text-sm mb-2">Value: ${generatedStrategy.offer_stack?.mid_ticket.value?.toLocaleString()}</p>
+                    <p className="text-foreground/80 text-sm mb-3">{generatedStrategy.offer_stack?.mid_ticket.whats_included}</p>
+                    <div className="bg-card p-3 rounded"><p className="text-green-300 text-sm">🛡️ {generatedStrategy.offer_stack?.mid_ticket.guarantee}</p></div>
                   </div>
                 )}
 
                 {/* High Ticket */}
-                {generatedStrategy.offer_stack.high_ticket && (
+                {generatedStrategy.offer_stack?.high_ticket && (
                   <div className="p-5 bg-yellow-900 bg-opacity-20 border border-yellow-400 rounded-lg">
                     <div className="flex items-center justify-between mb-3">
                       <div className="flex items-center gap-2">
@@ -373,25 +380,25 @@ Be specific, aggressive, and focus on VALUE DELIVERY. Your response must be stru
                         <span className="text-muted-foreground text-sm">Premium DFY • Application Only</span>
                       </div>
                       <Badge className="bg-yellow-400 text-black font-bold text-lg px-3 py-1">
-                        ${generatedStrategy.offer_stack.high_ticket.price?.toLocaleString()}
+                        ${generatedStrategy.offer_stack?.high_ticket.price?.toLocaleString()}
                       </Badge>
                     </div>
-                    <h4 className="text-foreground font-bold text-lg mb-1">{generatedStrategy.offer_stack.high_ticket.name}</h4>
-                    <p className="text-muted-foreground text-sm mb-2">Value: ${generatedStrategy.offer_stack.high_ticket.value?.toLocaleString()}</p>
-                    <p className="text-foreground/80 text-sm mb-3">{generatedStrategy.offer_stack.high_ticket.whats_included}</p>
-                    <div className="bg-card p-3 rounded"><p className="text-yellow-300 text-sm">🛡️ {generatedStrategy.offer_stack.high_ticket.guarantee}</p></div>
+                    <h4 className="text-foreground font-bold text-lg mb-1">{generatedStrategy.offer_stack?.high_ticket.name}</h4>
+                    <p className="text-muted-foreground text-sm mb-2">Value: ${generatedStrategy.offer_stack?.high_ticket.value?.toLocaleString()}</p>
+                    <p className="text-foreground/80 text-sm mb-3">{generatedStrategy.offer_stack?.high_ticket.whats_included}</p>
+                    <div className="bg-card p-3 rounded"><p className="text-yellow-300 text-sm">🛡️ {generatedStrategy.offer_stack?.high_ticket.guarantee}</p></div>
                   </div>
                 )}
 
                 {/* Downsell */}
-                {generatedStrategy.offer_stack.downsell && (
+                {generatedStrategy.offer_stack?.downsell && (
                   <div className="p-4 bg-purple-900 bg-opacity-20 border border-purple-500 rounded-lg">
                     <div className="flex items-center justify-between mb-2">
                       <Badge className="bg-purple-600 text-primary-foreground font-bold">DOWNSELL</Badge>
-                      <Badge className="bg-purple-500 text-primary-foreground font-bold">${generatedStrategy.offer_stack.downsell.price?.toLocaleString()}</Badge>
+                      <Badge className="bg-purple-500 text-primary-foreground font-bold">${generatedStrategy.offer_stack?.downsell.price?.toLocaleString()}</Badge>
                     </div>
-                    <h4 className="text-foreground font-bold mb-1">{generatedStrategy.offer_stack.downsell.name}</h4>
-                    <p className="text-muted-foreground text-sm">Value: ${generatedStrategy.offer_stack.downsell.value?.toLocaleString()}</p>
+                    <h4 className="text-foreground font-bold mb-1">{generatedStrategy.offer_stack?.downsell.name}</h4>
+                    <p className="text-muted-foreground text-sm">Value: ${generatedStrategy.offer_stack?.downsell.value?.toLocaleString()}</p>
                   </div>
                 )}
               </CardContent>
@@ -409,21 +416,21 @@ Be specific, aggressive, and focus on VALUE DELIVERY. Your response must be stru
                 <div className="grid md:grid-cols-2 gap-6">
                   <div className="p-4 bg-card rounded-lg">
                     <h3 className="text-yellow-400 font-bold mb-2">ANCHOR PRICE</h3>
-                    <p className="text-3xl font-black text-foreground">${generatedStrategy.pricing_strategy.anchor_price.toLocaleString()}</p>
+                    <p className="text-3xl font-black text-foreground">${generatedStrategy.pricing_strategy?.anchor_price?.toLocaleString?.() ?? "—"}</p>
                   </div>
                   <div className="p-4 bg-card rounded-lg">
                     <h3 className="text-green-400 font-bold mb-2">ACTUAL PRICE</h3>
-                    <p className="text-3xl font-black text-foreground">${generatedStrategy.pricing_strategy.actual_price.toLocaleString()}</p>
+                    <p className="text-3xl font-black text-foreground">${generatedStrategy.pricing_strategy?.actual_price?.toLocaleString?.() ?? "—"}</p>
                   </div>
                 </div>
                 <div className="mt-6 space-y-4">
                   <div>
                     <h3 className="text-yellow-400 font-bold mb-2">URGENCY MECHANISM</h3>
-                    <p className="text-foreground/80">{generatedStrategy.pricing_strategy.urgency_mechanism}</p>
+                    <p className="text-foreground/80">{generatedStrategy.pricing_strategy?.urgency_mechanism}</p>
                   </div>
                   <div>
                     <h3 className="text-yellow-400 font-bold mb-2">POSITIONING</h3>
-                    <p className="text-foreground/80">{generatedStrategy.pricing_strategy.positioning}</p>
+                    <p className="text-foreground/80">{generatedStrategy.pricing_strategy?.positioning}</p>
                   </div>
                 </div>
               </CardContent>
@@ -437,13 +444,13 @@ Be specific, aggressive, and focus on VALUE DELIVERY. Your response must be stru
               <CardContent className="space-y-6">
                 <div className="p-4 bg-yellow-900 bg-opacity-20 border border-yellow-400 rounded-lg">
                   <h3 className="text-yellow-400 font-bold mb-2">LEAD MAGNET</h3>
-                  <p className="text-foreground/80">{generatedStrategy.funnel_map.lead_magnet}</p>
+                  <p className="text-foreground/80">{generatedStrategy.funnel_map?.lead_magnet}</p>
                 </div>
 
                 <div className="p-4 bg-card rounded-lg">
                   <h3 className="text-foreground font-bold mb-4">NURTURE SEQUENCE</h3>
                   <div className="space-y-3">
-                    {generatedStrategy.funnel_map.nurture_sequence.map((step, index) => (
+                    {(Array.isArray(generatedStrategy.funnel_map?.nurture_sequence) ? generatedStrategy.funnel_map.nurture_sequence : []).map((step, index) => (
                       <div key={index} className="flex items-start gap-3">
                         <div className="w-6 h-6 bg-yellow-400 text-black rounded-full flex items-center justify-center font-bold text-sm">
                           {index + 1}
@@ -456,7 +463,7 @@ Be specific, aggressive, and focus on VALUE DELIVERY. Your response must be stru
 
                 <div className="p-4 bg-green-900 bg-opacity-20 border border-green-400 rounded-lg">
                   <h3 className="text-green-400 font-bold mb-2">CLOSE MECHANISM</h3>
-                  <p className="text-foreground/80">{generatedStrategy.funnel_map.close_mechanism}</p>
+                  <p className="text-foreground/80">{generatedStrategy.funnel_map?.close_mechanism}</p>
                 </div>
               </CardContent>
             </Card>
@@ -474,7 +481,7 @@ Be specific, aggressive, and focus on VALUE DELIVERY. Your response must be stru
                   <div className="p-4 bg-blue-900 bg-opacity-20 border border-blue-500 rounded-lg">
                     <h3 className="text-blue-400 font-bold mb-3">📱 DAILY CONTENT IDEAS</h3>
                     <div className="space-y-2">
-                      {generatedStrategy.lead_generation.daily_content_ideas?.map((idea, index) => (
+                      {(Array.isArray(generatedStrategy.lead_generation.daily_content_ideas) ? generatedStrategy.lead_generation.daily_content_ideas : []).map((idea, index) => (
                         <div key={index} className="flex items-start gap-3 p-3 bg-card rounded">
                           <div className="w-6 h-6 bg-blue-500 text-primary-foreground rounded-full flex items-center justify-center font-bold text-sm flex-shrink-0">{index + 1}</div>
                           <p className="text-foreground/80 text-sm">{idea}</p>
@@ -495,7 +502,7 @@ Be specific, aggressive, and focus on VALUE DELIVERY. Your response must be stru
             )}
 
             {/* Objection Handling */}
-            {generatedStrategy.objection_handling && generatedStrategy.objection_handling.length > 0 && (
+            {Array.isArray(generatedStrategy.objection_handling) && generatedStrategy.objection_handling.length > 0 && (
               <Card className="dark-card border-red-500">
                 <CardHeader>
                   <CardTitle className="text-red-400 font-bold text-xl flex items-center gap-2">

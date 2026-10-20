@@ -11,6 +11,7 @@ import BrandingPanel from "@/components/clientmagnet/BrandingPanel";
 import { generateFreebiePDF } from "@/components/clientmagnet/generateFreebiePDF";
 import { getBrandProfileForBusiness } from "@/lib/brand-profile";
 import { accountStorage } from "@/lib/account-storage";
+import { coreOfferOf } from "@/lib/strategy";
 
 const ASSET_PURPOSES = [
   { id: "lead_magnet", label: "Free Lead Magnet", desc: "Capture leads and move them toward an offer", icon: Gift },
@@ -242,7 +243,7 @@ Launch Purpose / Mission: ${biz.launch_purpose || "N/A"}
 
   const offerCtx = strat?.offer_stack ? `
 === OFFER LADDER / STRATEGY (Offer Builder) ===
-Core Offer: ${strat.offer_stack.core_offer?.name || "N/A"} — Value: $${strat.offer_stack.core_offer?.value || 0} — Price: $${strat.offer_stack.core_offer?.price || 0} — Guarantee: ${strat.offer_stack.core_offer?.guarantee || "N/A"}
+Core Offer: ${coreOfferOf(strat).name || "N/A"} — Value: $${coreOfferOf(strat).value || 0} — Price: $${coreOfferOf(strat).price || 0} — Guarantee: ${coreOfferOf(strat).guarantee || "N/A"}
 Upsells: ${(strat.offer_stack.upsells || []).map(u => `${u.name} ($${u.price})`).join(", ") || "None"}
 Downsell: ${strat.offer_stack.downsell?.name ? `${strat.offer_stack.downsell.name} ($${strat.offer_stack.downsell.price})` : "None"}
 Pricing Strategy — Anchor: $${strat.pricing_strategy?.anchor_price || 0} — Actual: $${strat.pricing_strategy?.actual_price || 0} — Positioning: ${strat.pricing_strategy?.positioning || "N/A"} — Urgency: ${strat.pricing_strategy?.urgency_mechanism || "N/A"}
@@ -379,7 +380,7 @@ export default function ClientMagnetBuilder() {
     setIntakeData(null);
     setForm((prev) => ({
       ...prev,
-      offer: prev.offer || strat?.offer_stack?.core_offer?.name || biz.core_service || "",
+      offer: prev.offer || coreOfferOf(strat).name || biz.core_service || "",
       audience: prev.audience || biz.target_avatar || "",
       result: prev.result || biz.dream_outcome || "",
     }));
@@ -669,9 +670,9 @@ Return only the requested structured outline. Do not write the full asset yet. D
                       <p><span className="text-muted-foreground">Unique Advantage:</span> <span className="text-foreground font-medium">{bizData?.unique_advantage || "—"}</span></p>
                       <p><span className="text-muted-foreground">Biggest Challenge:</span> <span className="text-foreground font-medium">{bizData?.biggest_challenge || "—"}</span></p>
                       <p><span className="text-muted-foreground">Proof:</span> <span className="text-foreground font-medium">{bizData?.likelihood_of_achievement_proof || "—"}</span></p>
-                      <p><span className="text-muted-foreground">Core Offer:</span> <span className="text-foreground font-medium">{stratData?.offer_stack?.core_offer?.name || "—"}</span></p>
-                      <p><span className="text-muted-foreground">Offer Price:</span> <span className="text-foreground font-medium">${stratData?.offer_stack?.core_offer?.price || "—"}</span></p>
-                      <p><span className="text-muted-foreground">Guarantee:</span> <span className="text-foreground font-medium">{stratData?.offer_stack?.core_offer?.guarantee || "—"}</span></p>
+                      <p><span className="text-muted-foreground">Core Offer:</span> <span className="text-foreground font-medium">{coreOfferOf(stratData).name || "—"}</span></p>
+                      <p><span className="text-muted-foreground">Offer Price:</span> <span className="text-foreground font-medium">${coreOfferOf(stratData).price || "—"}</span></p>
+                      <p><span className="text-muted-foreground">Guarantee:</span> <span className="text-foreground font-medium">{coreOfferOf(stratData).guarantee || "—"}</span></p>
                     </>
                   )}
                 </div>
