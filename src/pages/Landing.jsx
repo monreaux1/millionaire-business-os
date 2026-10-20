@@ -30,7 +30,7 @@ function useLightLogo(src) {
           const [r, g, b] = [px[i], px[i + 1], px[i + 2]];
           const max = Math.max(r, g, b);
           const saturation = max ? (max - Math.min(r, g, b)) / max : 0;
-          if (px[i + 3] > 0 && saturation < 0.4) {
+          if (px[i + 3] > 0 && (max < 90 || saturation < 0.4)) {
             px[i] = 244; px[i + 1] = 240; px[i + 2] = 255;
           }
         }
