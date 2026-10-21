@@ -85,7 +85,7 @@ html.lp-root, html.lp-root body { background: #140e33; }
   .lp-hero-video { object-position: 50% 30%; }
   .lp-hero-glow {
     background:
-      linear-gradient(0deg, var(--night) 0%, rgba(20, 14, 51, 0.88) 38%, rgba(20, 14, 51, 0.35) 70%, rgba(20, 14, 51, 0.55) 100%);
+      linear-gradient(0deg, var(--night) 0%, rgba(20, 14, 51, 0.82) 42%, rgba(20, 14, 51, 0.12) 72%, rgba(20, 14, 51, 0.4) 100%);
   }
 }
 .lp-nav { display: flex; justify-content: space-between; align-items: center; padding: 22px 0; }
