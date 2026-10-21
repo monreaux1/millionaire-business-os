@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { LogIn, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import AuthLayout from "@/components/AuthLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -90,7 +90,6 @@ export default function Login({ initialMode = "signin" }) {
 
   return (
     <AuthLayout
-      icon={LogIn}
       title={copy.title}
       subtitle={copy.subtitle}
       footer={

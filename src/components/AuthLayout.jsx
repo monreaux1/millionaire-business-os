@@ -1,13 +1,24 @@
 import React from "react";
+import { LOGO_URL, useBrandLogo, useIsDark } from "@/lib/logo";
 
-export default function AuthLayout({ icon: Icon, title, subtitle, footer, children }) {
+function BrandLogo() {
+  const dark = useIsDark();
+  const url = useBrandLogo(LOGO_URL, { light: dark });
+  return (
+    <div className="h-16 flex items-center justify-center mb-6">
+      {url
+        ? <img src={url} alt="Millionaire Business OS" className="h-14 sm:h-16 w-auto max-w-full" />
+        : <span className="text-xl font-bold tracking-tight text-foreground">Millionaire Business <span className="text-primary">OS</span></span>}
+    </div>
+  );
+}
+
+export default function AuthLayout({ title, subtitle, footer, children }) {
   return (
     <div className="min-h-screen flex items-center justify-center bg-background px-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-10">
-          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-primary mb-4">
-            <Icon className="w-7 h-7 text-primary-foreground" aria-hidden="true" />
-          </div>
+          <a href="/welcome" aria-label="Millionaire Business OS home"><BrandLogo /></a>
           <h1 className="text-3xl font-bold tracking-tight text-foreground">{title}</h1>
           {subtitle && <p className="text-muted-foreground mt-2">{subtitle}</p>}
         </div>
