@@ -4,12 +4,47 @@
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "functions": {
-    "api/**/*.js": { "maxDuration": 300 }
+    "api/**/*.js": {
+      "maxDuration": 300
+    }
   },
   "crons": [
-    { "path": "/api/cron/daily-briefing", "schedule": "0 13 * * *" }
+    {
+      "path": "/api/cron/daily-briefing",
+      "schedule": "0 13 * * *"
+    }
   ],
   "rewrites": [
-    { "source": "/((?!api/).*)", "destination": "/index.html" }
+    {
+      "source": "/favicon.png",
+      "destination": "https://media.base44.com/images/public/68b3ceea8626205b99d31641/5489f7c4c_mbsymbol.png"
+    },
+    {
+      "source": "/favicon.ico",
+      "destination": "https://media.base44.com/images/public/68b3ceea8626205b99d31641/5489f7c4c_mbsymbol.png"
+    },
+    {
+      "source": "/apple-touch-icon.png",
+      "destination": "https://media.base44.com/images/public/68b3ceea8626205b99d31641/5489f7c4c_mbsymbol.png"
+    },
+    {
+      "source": "/logo.png",
+      "destination": "https://media.base44.com/images/public/68b3ceea8626205b99d31641/8da510d05_mblogo.png"
+    },
+    {
+      "source": "/((?!api/).*)",
+      "destination": "/index.html"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/(favicon.png|favicon.ico|apple-touch-icon.png|logo.png)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=86400"
+        }
+      ]
+    }
   ]
 }
