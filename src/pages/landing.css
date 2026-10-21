@@ -73,11 +73,20 @@ html.lp-root, html.lp-root body { background: #140e33; }
   opacity: 0; transition: opacity 1.6s ease; filter: saturate(1.08) contrast(1.05);
 }
 .lp-hero-video.is-ready { opacity: 1; }
+
 .lp-hero-glow {
   position: absolute; inset: 0; z-index: -1;
   background:
     linear-gradient(90deg, rgba(20, 14, 51, 0.92) 0%, rgba(20, 14, 51, 0.55) 45%, rgba(20, 14, 51, 0.15) 100%),
     linear-gradient(0deg, var(--night) 0%, rgba(20, 14, 51, 0) 35%);
+}
+@media (max-width: 759px) {
+  /* Phones: keep the subject in view up top and darken the bottom where the text sits. */
+  .lp-hero-video { object-position: 50% 30%; }
+  .lp-hero-glow {
+    background:
+      linear-gradient(0deg, var(--night) 0%, rgba(20, 14, 51, 0.88) 38%, rgba(20, 14, 51, 0.35) 70%, rgba(20, 14, 51, 0.55) 100%);
+  }
 }
 .lp-nav { display: flex; justify-content: space-between; align-items: center; padding: 22px 0; }
 .lp-wordmark { font-family: var(--display); font-weight: 600; font-size: 1.05rem; letter-spacing: -0.01em; }

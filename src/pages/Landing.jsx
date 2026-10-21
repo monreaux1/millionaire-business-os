@@ -10,13 +10,37 @@ const HERO_VIDEO = import.meta.env.VITE_HERO_VIDEO_URL
 function useHeroVideo() {
   const [ok, setOk] = useState(false);
   useEffect(() => {
-    const saveData = navigator.connection?.saveData;
-    const wide = window.matchMedia?.("(min-width: 760px)").matches;
+    // The file streams (starts before it finishes downloading), so phones get it
+    // too, except on data-saver, very slow connections or reduced motion.
+    const conn = navigator.connection;
+    const slow = conn?.saveData || /(^|-)2g$/.test(conn?.effectiveType || "");
     const calm = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
-    setOk(Boolean(HERO_VIDEO && wide && !saveData && !calm));
+    setOk(Boolean(HERO_VIDEO && !slow && !calm));
   }, []);
   return ok;
 }
+
+// iPhones only autoplay when the video element is really muted; React's
+// `muted` prop doesn't always set that, so it's set here and play() is retried.
+function useAutoplay(ref, active) {
+  useEffect(() => {
+    const el = ref.current;
+    if (!active || !el) return undefined;
+    el.muted = true;
+    el.defaultMuted = true;
+    el.setAttribute("muted", "");
+    const tryPlay = () => el.play?.().catch(() => {});
+    tryPlay();
+    const onVisible = () => { if (!document.hidden) tryPlay(); };
+    document.addEventListener("visibilitychange", onVisible);
+    window.addEventListener("touchstart", tryPlay, { once: true, passive: true });
+    return () => {
+      document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener("touchstart", tryPlay);
+    };
+  }, [ref, active]);
+}
+
 const SIGNUP_URL = "/login?mode=signup";
 // Brand logo (orange mark + black lettering on transparent). Set VITE_LOGO_URL to swap it.
 const LOGO_URL = import.meta.env.VITE_LOGO_URL || "https://media.base44.com/images/public/68b3ceea8626205b99d31641/8da510d05_mblogo.png";
@@ -198,10 +222,13 @@ function useFounding() {
 function Hero({ spots }) {
   const [videoReady, setVideoReady] = useState(false);
   const showVideo = useHeroVideo();
+  const videoRef = useRef(null);
+  useAutoplay(videoRef, showVideo);
   return (
     <header className="lp-hero">
       {showVideo && (
         <video
+          ref={videoRef}
           className={`lp-hero-video ${videoReady ? "is-ready" : ""}`}
           src={HERO_VIDEO}
           autoPlay
@@ -210,6 +237,7 @@ function Hero({ spots }) {
           playsInline
           preload="auto"
           onCanPlay={() => setVideoReady(true)}
+          onPlaying={() => setVideoReady(true)}
           aria-hidden="true"
         />
       )}
