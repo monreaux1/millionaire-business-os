@@ -36,7 +36,28 @@ export const priceIdFor = (planKey) => {
   const plan = PLANS.find((p) => p.key === planKey);
   return plan ? env(plan.env) : "";
 };
-const planForPrice = (priceId) => PLANS.find((p) => env(p.env) && env(p.env) === priceId)?.key || "";
+const planForPrice = (priceId) =>
+  PLANS.find((p) => env(p.env) && (env(p.env) === priceId || resolvedPrices.get(env(p.env)) === priceId))?.key || "";
+
+// The env var may hold a price ID (price_…) or, by mistake, the product ID
+// (prod_…). A product ID is turned into its recurring price so checkout works.
+const resolvedPrices = new Map();
+export async function resolvePriceId(planKey) {
+  const value = priceIdFor(planKey);
+  if (!value || !value.startsWith("prod_")) return value;
+  if (resolvedPrices.has(value)) return resolvedPrices.get(value);
+  const stripe = getStripe();
+  const product = await stripe.products.retrieve(value);
+  let priceId = typeof product.default_price === "string" ? product.default_price : product.default_price?.id || "";
+  let price = priceId ? await stripe.prices.retrieve(priceId) : null;
+  if (!price?.active || !price?.recurring) {
+    const list = await stripe.prices.list({ product: value, active: true, type: "recurring", limit: 1 });
+    price = list.data[0] || null;
+  }
+  if (!price) throw new HttpError(500, `No active monthly/yearly price found on Stripe product ${value}.`);
+  resolvedPrices.set(value, price.id);
+  return price.id;
+}
 
 export const isAdminUser = (user) => user?.role === "admin";
 
